@@ -1,0 +1,21 @@
+{
+  "name": "wedding-guest-manager",
+  "version": "1.0.0",
+  "description": "Secure guest management dashboard for wedding capacity planning",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "mysql2": "^3.11.3"
+  }
+}

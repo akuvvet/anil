@@ -1,15 +1,8 @@
 <?php
 declare(strict_types=1);
 session_start();
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
-$dbHost = '127.0.0.1';
-$dbName = 'davetiye_app';
-$dbUser = 'root';
-$dbPass = '';
+require_once __DIR__ . '/config.php';
+requireLogin();
 $success = '';
 $error = '';
 
@@ -25,10 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Gecersiz status secimi.';
     } else {
         try {
-            $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            ]);
+            $pdo = getPdo();
             $stmt = $pdo->prepare('INSERT INTO guests (name, phone, email, status) VALUES (:name,:phone,:email,:status)');
             $stmt->execute([
                 'name' => $name,

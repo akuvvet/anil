@@ -1,13 +1,13 @@
-CREATE DATABASE IF NOT EXISTS davetiye_app
+CREATE DATABASE IF NOT EXISTS dbwedding
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE davetiye_app;
+USE dbwedding;
 
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
-  password_hash CHAR(64) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -17,10 +17,12 @@ CREATE TABLE IF NOT EXISTS guests (
   phone VARCHAR(30) DEFAULT NULL,
   email VARCHAR(150) DEFAULT NULL,
   status TINYINT NOT NULL DEFAULT 2,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CHECK (status IN (1, 2, 3))
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO users (username, password_hash)
-VALUES ('uwedding', SHA2('OoAkk20071971', 256))
+VALUES (
+  'admin',
+  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+)
 ON DUPLICATE KEY UPDATE username = username;

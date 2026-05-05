@@ -1,21 +1,11 @@
 <?php
 declare(strict_types=1);
 session_start();
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
+require_once __DIR__ . '/config.php';
+requireLogin();
 
-$dbHost = '127.0.0.1';
-$dbName = 'davetiye_app';
-$dbUser = 'root';
-$dbPass = '';
-$salonCapacity = 300;
-
-$pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-]);
+$salonCapacity = SALON_CAPACITY;
+$pdo = getPdo();
 $guests = $pdo->query('SELECT id,name,phone,email,status,created_at FROM guests ORDER BY id DESC')->fetchAll();
 $countsRaw = $pdo->query('SELECT status, COUNT(*) AS total FROM guests GROUP BY status')->fetchAll();
 $counts = [1 => 0, 2 => 0, 3 => 0];

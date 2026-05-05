@@ -1,0 +1,24 @@
+node_modules/
+.env
+npm-debug.log*
+
+# Existing legacy files can stay in repo,
+# but local artifacts should not.
+.DS_Store
+Thumbs.db
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.idea/
+.vscode/
+
+# OS / Logs
+*.log
+
+# Local environment overrides
+.env
+.env.local
+
+# Optional local config file if used later
+config.local.php

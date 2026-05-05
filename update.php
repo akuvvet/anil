@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 session_start();
+require_once __DIR__ . '/config.php';
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['user_id'])) {
@@ -12,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
 $input = json_decode(file_get_contents('php://input') ?: '{}', true);
 $id = (int)($input['id'] ?? 0);
 $status = (int)($input['status'] ?? 0);
-$salonCapacity = 300;
+$salonCapacity = SALON_CAPACITY;
 
 if ($id <= 0 || !in_array($status, [1,2,3], true)) {
     http_response_code(422);
@@ -20,16 +21,8 @@ if ($id <= 0 || !in_array($status, [1,2,3], true)) {
     exit;
 }
 
-$dbHost = '127.0.0.1';
-$dbName = 'davetiye_app';
-$dbUser = 'root';
-$dbPass = '';
-
 try {
-    $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    $pdo = getPdo();
     $stmt = $pdo->prepare('UPDATE guests SET status = :status WHERE id = :id');
     $stmt->execute(['status' => $status, 'id' => $id]);
 

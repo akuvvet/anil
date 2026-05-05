@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 session_start();
+require_once __DIR__ . '/config.php';
 
 if (isset($_GET['logout'])) {
     $_SESSION = [];
@@ -14,10 +15,6 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
-$dbHost = '127.0.0.1';
-$dbName = 'davetiye_app';
-$dbUser = 'root';
-$dbPass = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -28,15 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Kullanici adi ve sifre zorunludur.';
     } else {
         try {
-            $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            ]);
+            $pdo = getPdo();
             $stmt = $pdo->prepare('SELECT id, username, password_hash FROM users WHERE username = :username LIMIT 1');
             $stmt->execute(['username' => $username]);
             $user = $stmt->fetch();
 
-            if ($user && hash_equals($user['password_hash'], hash('sha256', $password))) {
+            if ($user && password_verify($password, $user['password_hash'])) {
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = (int)$user['id'];
                 $_SESSION['username'] = $user['username'];
