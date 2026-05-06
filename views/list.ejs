@@ -30,7 +30,7 @@
       </div>
       <div id="tableWrap" class="overflow-x-auto">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">ID</th><th class="px-4 py-3 text-left" title="Varsayilan liste siralamasi A-Z">Ad Soyad <span class="text-slate-400 font-normal" aria-hidden="true">(A-Z)</span></th><th class="px-4 py-3 text-left">Telefon</th><th class="px-4 py-3 text-left">Email</th><th class="px-4 py-3 text-left" title="Duzenle ile degistirilebilir">Status</th><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th></tr></thead>
+          <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">ID</th><th class="px-4 py-3 text-left" title="Isme gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="name" aria-label="Ad Soyad sirala">Ad Soyad <span class="sort-indicator text-slate-400" aria-hidden="true">A-Z</span></button></th><th class="px-4 py-3 text-left">Telefon</th><th class="px-4 py-3 text-left">Email</th><th class="px-4 py-3 text-left" title="Statusa gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="status" aria-label="Status sirala">Status <span class="sort-indicator text-slate-400" aria-hidden="true"></span></button></th><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th></tr></thead>
           <tbody>
             <% for (const g of guests) { %>
             <tr class="border-t guest-row" data-id="<%= g.id %>" data-name="<%= g.name %>" data-phone="<%= g.phone || "" %>" data-email="<%= g.email || "" %>" data-status="<%= g.status %>">
@@ -73,13 +73,56 @@
     if(inp) return String(inp.value || '').trim();
     return String(cell.textContent || '').trim();
   }
-  function sortGuestTableByNameAsc(){
+  const sortState = { key: 'name', direction: 'asc' };
+
+  function guestRowStatusForSort(tr){
+    return Number(tr.dataset.status || 0);
+  }
+  function sortDirectionFactor(){
+    return sortState.direction === 'asc' ? 1 : -1;
+  }
+  function compareGuestRows(a,b){
+    if(sortState.key === 'status'){
+      const diff = (guestRowStatusForSort(a) - guestRowStatusForSort(b)) * sortDirectionFactor();
+      if(diff !== 0) return diff;
+      return guestRowNameForSort(a).localeCompare(guestRowNameForSort(b), 'tr', { sensitivity: 'base' });
+    }
+    return guestRowNameForSort(a).localeCompare(guestRowNameForSort(b), 'tr', { sensitivity: 'base' }) * sortDirectionFactor();
+  }
+  function refreshSortIndicators(){
+    const buttons = document.querySelectorAll('.sort-btn');
+    buttons.forEach((btn)=>{
+      const key = btn.dataset.sortKey;
+      const indicator = btn.querySelector('.sort-indicator');
+      if(!indicator) return;
+      if(key !== sortState.key){
+        indicator.textContent = '';
+        btn.classList.remove('text-indigo-700');
+        return;
+      }
+      if(key === 'name') indicator.textContent = sortState.direction === 'asc' ? 'A-Z' : 'Z-A';
+      if(key === 'status') indicator.textContent = sortState.direction === 'asc' ? '1-3' : '3-1';
+      btn.classList.add('text-indigo-700');
+    });
+  }
+  function sortGuestTable(){
     if(editingRow) return;
     const tbody = document.querySelector('#tableWrap tbody');
     if(!tbody) return;
     const rows = Array.from(tbody.querySelectorAll('tr.guest-row'));
-    rows.sort((a,b)=> guestRowNameForSort(a).localeCompare(guestRowNameForSort(b), 'tr', { sensitivity: 'base' }));
+    rows.sort(compareGuestRows);
     for(const r of rows) tbody.appendChild(r);
+    refreshSortIndicators();
+  }
+  function setSort(key){
+    if(sortState.key === key){
+      sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+    }else{
+      sortState.key = key;
+      sortState.direction = 'asc';
+    }
+    sortGuestTable();
+    applyTableFilter();
   }
 
   function statusCellHtml(id, status){
@@ -184,7 +227,7 @@
     tr.querySelector('.guest-cell-status').innerHTML = statusCellHtml(id, status);
     tr.querySelector('.guest-cell-actions').innerHTML = actionsCellHtml();
     updateStats(data.stats);
-    sortGuestTableByNameAsc();
+    sortGuestTable();
     applyTableFilter();
   }
 
@@ -264,7 +307,10 @@
       applyTableFilter();
     });
   }
-  sortGuestTableByNameAsc();
+  document.querySelectorAll('.sort-btn').forEach((btn)=>{
+    btn.addEventListener('click', ()=> setSort(btn.dataset.sortKey));
+  });
+  sortGuestTable();
   applyTableFilter();
   </script>
 </body>
