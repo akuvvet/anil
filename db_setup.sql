@@ -17,12 +17,23 @@ CREATE TABLE IF NOT EXISTS guests (
   phone VARCHAR(30) DEFAULT NULL,
   email VARCHAR(150) DEFAULT NULL,
   status TINYINT NOT NULL DEFAULT 2,
+  user_id INT UNSIGNED DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE guests
+  ADD COLUMN IF NOT EXISTS user_id INT UNSIGNED DEFAULT NULL;
 
 INSERT INTO users (username, password_hash)
 VALUES (
   'admin',
+  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+)
+ON DUPLICATE KEY UPDATE username = username;
+
+INSERT INTO users (username, password_hash)
+VALUES (
+  'enis',
   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
 )
 ON DUPLICATE KEY UPDATE username = username;
