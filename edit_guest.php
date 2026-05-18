@@ -4,17 +4,14 @@ session_start();
 require_once __DIR__ . '/config.php';
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Yetkisiz erisim.']);
-    exit;
-}
+requireEditorApi();
 
 $input = json_decode(file_get_contents('php://input') ?: '{}', true);
 $id = (int)($input['id'] ?? 0);
 $name = trim((string)($input['name'] ?? ''));
 $phone = trim((string)($input['phone'] ?? ''));
 $email = trim((string)($input['email'] ?? ''));
+$city = trim((string)($input['city'] ?? ''));
 $status = (int)($input['status'] ?? 0);
 $salonCapacity = SALON_CAPACITY;
 
@@ -26,11 +23,12 @@ if ($id <= 0 || $name === '' || !in_array($status, [1, 2, 3], true)) {
 
 try {
     $pdo = getPdo();
-    $stmt = $pdo->prepare('UPDATE guests SET name = :name, phone = :phone, email = :email, status = :status WHERE id = :id');
+    $stmt = $pdo->prepare('UPDATE guests SET name = :name, phone = :phone, email = :email, city = :city, status = :status WHERE id = :id');
     $stmt->execute([
         'name' => $name,
         'phone' => $phone !== '' ? $phone : null,
         'email' => $email !== '' ? $email : null,
+        'city' => $city !== '' ? $city : null,
         'status' => $status,
         'id' => $id,
     ]);

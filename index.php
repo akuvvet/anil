@@ -2,7 +2,7 @@
 declare(strict_types=1);
 session_start();
 require_once __DIR__ . '/config.php';
-requireLogin();
+requireEditor();
 $success = '';
 $error = '';
 
@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim((string)($_POST['name'] ?? ''));
     $phone = trim((string)($_POST['phone'] ?? ''));
     $email = trim((string)($_POST['email'] ?? ''));
+    $city = trim((string)($_POST['city'] ?? ''));
     $status = (int)($_POST['status'] ?? 2);
 
     if ($name === '') {
@@ -19,11 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo = getPdo();
-            $stmt = $pdo->prepare('INSERT INTO guests (name, phone, email, status) VALUES (:name,:phone,:email,:status)');
+            $stmt = $pdo->prepare('INSERT INTO guests (name, phone, email, city, status) VALUES (:name,:phone,:email,:city,:status)');
             $stmt->execute([
                 'name' => $name,
                 'phone' => $phone !== '' ? $phone : null,
                 'email' => $email !== '' ? $email : null,
+                'city' => $city !== '' ? $city : null,
                 'status' => $status
             ]);
             header('Location: index.php?ok=1');
@@ -55,6 +57,7 @@ if (isset($_GET['ok'])) $success = 'Davetli basariyla kaydedildi.';
         <div class="sm:col-span-2"><label class="text-sm">Ad Soyad</label><input name="name" required class="mt-1 w-full rounded border px-3 py-2"></div>
         <div><label class="text-sm">Telefon</label><input name="phone" class="mt-1 w-full rounded border px-3 py-2"></div>
         <div><label class="text-sm">Email</label><input type="email" name="email" class="mt-1 w-full rounded border px-3 py-2"></div>
+        <div><label class="text-sm">Sehir</label><input name="city" class="mt-1 w-full rounded border px-3 py-2" placeholder="Orn. Istanbul, Ankara"></div>
         <div class="sm:col-span-2"><label class="text-sm">Baslangic Statusu</label><select name="status" class="mt-1 w-full rounded border px-3 py-2"><option value="1">1 - Mutlaka</option><option value="2" selected>2 - Olabilir</option><option value="3">3 - Gerek Yok</option></select></div>
         <div class="sm:col-span-2"><button class="rounded bg-indigo-600 text-white px-5 py-2.5 font-semibold">Kaydet</button></div>
       </form>

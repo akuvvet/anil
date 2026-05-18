@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="min-h-screen bg-slate-100">
-  <nav class="bg-slate-900 text-white"><div class="max-w-7xl mx-auto px-4 py-3 flex justify-between"><span>Davetli Yonetim Paneli</span><div class="flex items-center gap-2 text-sm"><span class="px-2 py-1 rounded bg-slate-800/80">Kullanici: <%= typeof username !== "undefined" ? username : "-" %></span><a class="px-3 py-1.5 rounded bg-slate-700" href="/">Giris Formu</a><a class="px-3 py-1.5 rounded bg-indigo-600" href="/list">Davetli Listesi</a><a class="px-3 py-1.5 rounded bg-rose-700" href="/logout">Cikis</a></div></div></nav>
+  <nav class="bg-slate-900 text-white"><div class="max-w-7xl mx-auto px-4 py-3 flex justify-between"><span>Davetli Yonetim Paneli</span><div class="flex items-center gap-2 text-sm"><span class="px-2 py-1 rounded bg-slate-800/80">Kullanici: <%= typeof username !== "undefined" ? username : "-" %></span><% if (readOnly) { %><span class="px-2 py-1 rounded bg-slate-800/80">Salt okunur</span><% } %><% if (!readOnly) { %><a class="px-3 py-1.5 rounded bg-slate-700" href="/">Giris Formu</a><% } %><a class="px-3 py-1.5 rounded bg-indigo-600" href="/list">Davetli Listesi</a><a class="px-3 py-1.5 rounded bg-rose-700" href="/logout">Cikis</a></div></div></nav>
   <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
     <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
       <div class="rounded-xl bg-emerald-600 text-white p-4"><p class="text-sm">Kesin Gelecekler (1)</p><p class="text-3xl font-bold" id="count-1"><%= stats.count1 %></p></div>
@@ -30,26 +30,33 @@
       </div>
       <div id="tableWrap" class="overflow-x-auto">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">ID</th><th class="px-4 py-3 text-left" title="Isme gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="name" aria-label="Ad Soyad sirala">Ad Soyad <span class="sort-indicator text-slate-400" aria-hidden="true">A-Z</span></button></th><th class="px-4 py-3 text-left">Telefon</th><th class="px-4 py-3 text-left">Email</th><th class="px-4 py-3 text-left" title="Statusa gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="status" aria-label="Status sirala">Status <span class="sort-indicator text-slate-400" aria-hidden="true"></span></button></th><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th></tr></thead>
+          <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">ID</th><th class="px-4 py-3 text-left" title="Isme gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="name" aria-label="Ad Soyad sirala">Ad Soyad <span class="sort-indicator text-slate-400" aria-hidden="true">A-Z</span></button></th><th class="px-4 py-3 text-left">Telefon</th><th class="px-4 py-3 text-left">Email</th><th class="px-4 py-3 text-left">Sehir</th><th class="px-4 py-3 text-left" title="Statusa gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="status" aria-label="Status sirala">Status <span class="sort-indicator text-slate-400" aria-hidden="true"></span></button></th><% if (!readOnly) { %><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th><% } %></tr></thead>
           <tbody>
             <% for (const g of guests) { %>
-            <tr class="border-t guest-row" data-id="<%= g.id %>" data-name="<%= g.name %>" data-phone="<%= g.phone || "" %>" data-email="<%= g.email || "" %>" data-status="<%= g.status %>" data-user-id="<%= g.user_id == null ? "" : g.user_id %>">
+            <tr class="border-t guest-row" data-id="<%= g.id %>" data-name="<%= g.name %>" data-phone="<%= g.phone || "" %>" data-email="<%= g.email || "" %>" data-city="<%= g.city || "" %>" data-status="<%= g.status %>" data-user-id="<%= g.user_id == null ? "" : g.user_id %>">
               <td class="px-4 py-3"><%= g.id %></td>
               <td class="px-4 py-3 font-medium guest-cell-name"><%= g.name %></td>
               <td class="px-4 py-3 guest-cell-phone"><%= g.phone || "" %></td>
               <td class="px-4 py-3 guest-cell-email"><%= g.email || "" %></td>
+              <td class="px-4 py-3 guest-cell-city"><%= g.city || "" %></td>
               <td class="px-4 py-3 guest-cell-status align-top">
+                <% if (readOnly) { %>
+                <span class="inline-block text-xs font-medium px-2 py-1 rounded status-badge status-<%= g.status %>"><%= g.status %> - <%= g.status === 1 ? "Mutlaka" : (g.status === 2 ? "Olabilir" : "Gerek Yok") %></span>
+                <% } else { %>
                 <div class="status-control">
                   <input type="range" min="1" max="3" step="1" value="<%= g.status %>" class="status-slider status-<%= g.status %>" data-id="<%= g.id %>">
                   <span class="status-label text-xs text-slate-600 mt-1 inline-block"><%= g.status %> - <span class="status-text"><%= g.status === 1 ? "Mutlaka" : (g.status === 2 ? "Olabilir" : "Gerek Yok") %></span></span>
                 </div>
+                <% } %>
               </td>
+              <% if (!readOnly) { %>
               <td class="px-4 py-3 guest-cell-actions align-top">
                 <div class="flex flex-wrap gap-1">
                   <button type="button" class="guest-edit-btn px-2 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700">Duzenle</button>
                   <% if ((typeof currentUserId !== "undefined" && currentUserId === 1) || (typeof currentUserId !== "undefined" && g.user_id != null && Number(g.user_id) === currentUserId)) { %><button type="button" class="guest-delete-btn px-2 py-1 rounded text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">Sil</button><% } %>
                 </div>
               </td>
+              <% } %>
             </tr>
             <% } %>
           </tbody>
@@ -59,6 +66,7 @@
   </main>
 
   <script>
+  const READ_ONLY = <%= readOnly ? 'true' : 'false' %>;
   const GUEST_API = { prefix: '/api/guest' };
   const statusTextMap = {1:'Mutlaka',2:'Olabilir',3:'Gerek Yok'};
   const CURRENT_USER_ID = <%= typeof currentUserId !== "undefined" ? Number(currentUserId || 0) : 0 %>;
@@ -151,6 +159,7 @@
     tr.querySelector('.guest-cell-name').innerHTML = b.name;
     tr.querySelector('.guest-cell-phone').innerHTML = b.phone;
     tr.querySelector('.guest-cell-email').innerHTML = b.email;
+    tr.querySelector('.guest-cell-city').innerHTML = b.city;
     tr.querySelector('.guest-cell-status').innerHTML = b.status;
     tr.querySelector('.guest-cell-actions').innerHTML = b.actions;
     delete tr._inlineBackup;
@@ -164,9 +173,10 @@
     const nameTd = tr.querySelector('.guest-cell-name');
     const phoneTd = tr.querySelector('.guest-cell-phone');
     const emailTd = tr.querySelector('.guest-cell-email');
+    const cityTd = tr.querySelector('.guest-cell-city');
     const statusTd = tr.querySelector('.guest-cell-status');
     const actionsTd = tr.querySelector('.guest-cell-actions');
-    tr._inlineBackup = { name: nameTd.innerHTML, phone: phoneTd.innerHTML, email: emailTd.innerHTML, status: statusTd.innerHTML, actions: actionsTd.innerHTML };
+    tr._inlineBackup = { name: nameTd.innerHTML, phone: phoneTd.innerHTML, email: emailTd.innerHTML, city: cityTd.innerHTML, status: statusTd.innerHTML, actions: actionsTd.innerHTML };
     editingRow = tr;
     tr.classList.add('guest-row-editing');
 
@@ -188,6 +198,12 @@
     inpEmail.className = 'guest-inline-field w-full min-w-[10rem] rounded border border-indigo-200 px-2 py-1 text-sm';
     inpEmail.value = tr.dataset.email || '';
     emailTd.replaceChildren(inpEmail);
+
+    const inpCity = document.createElement('input');
+    inpCity.type = 'text';
+    inpCity.className = 'guest-inline-field w-full min-w-[7rem] rounded border border-indigo-200 px-2 py-1 text-sm';
+    inpCity.value = tr.dataset.city || '';
+    cityTd.replaceChildren(inpCity);
 
     const sel = document.createElement('select');
     sel.className = 'guest-inline-status w-full max-w-[12rem] rounded border border-indigo-200 px-2 py-1 text-sm';
@@ -215,9 +231,10 @@
     const name = tr.querySelector('.guest-cell-name input')?.value.trim() || '';
     const phone = tr.querySelector('.guest-cell-phone input')?.value.trim() || '';
     const email = tr.querySelector('.guest-cell-email input')?.value.trim() || '';
+    const city = tr.querySelector('.guest-cell-city input')?.value.trim() || '';
     const status = Number(tr.querySelector('.guest-inline-status')?.value || 0);
     if(!name){ alert('Ad Soyad zorunludur'); return; }
-    const res = await fetch(`${GUEST_API.prefix}/${id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, phone, email, status }) });
+    const res = await fetch(`${GUEST_API.prefix}/${id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, phone, email, city, status }) });
     const ct = res.headers.get('content-type') || '';
     const data = ct.includes('application/json') ? await res.json() : { success: false, message: await res.text().catch(()=>'Sunucu yaniti gecersiz') };
     if(!res.ok || !data.success){ alert(data.message || 'Kayit guncellenemedi'); return; }
@@ -227,11 +244,13 @@
     tr.dataset.name = name;
     tr.dataset.phone = phone;
     tr.dataset.email = email;
+    tr.dataset.city = city;
     tr.dataset.status = String(status);
     tr.dataset.userId = String(CURRENT_USER_ID || '');
     tr.querySelector('.guest-cell-name').textContent = name;
     tr.querySelector('.guest-cell-phone').textContent = phone;
     tr.querySelector('.guest-cell-email').textContent = email;
+    tr.querySelector('.guest-cell-city').textContent = city;
     tr.querySelector('.guest-cell-status').innerHTML = statusCellHtml(id, status);
     tr.querySelector('.guest-cell-actions').innerHTML = actionsCellHtml(tr.dataset.userId);
     updateStats(data.stats);
@@ -252,12 +271,12 @@
   }
 
   const tableWrap = document.getElementById('tableWrap');
-  tableWrap.addEventListener('input', (e)=>{
+  if (!READ_ONLY) tableWrap.addEventListener('input', (e)=>{
     const slider = e.target.closest('.status-slider');
     if(!slider) return;
     updateSliderStyle(slider, slider.value);
   });
-  tableWrap.addEventListener('change', (e)=>{
+  if (!READ_ONLY) tableWrap.addEventListener('change', (e)=>{
     const slider = e.target.closest('.status-slider');
     if(!slider) return;
     const status = Number(slider.value);
@@ -266,7 +285,7 @@
     updateGuestStatus(id, status, slider);
   });
 
-  tableWrap.addEventListener('click', async (e)=>{
+  if (!READ_ONLY) tableWrap.addEventListener('click', async (e)=>{
     if(e.target.closest('.guest-inline-save')){
       await saveInlineEdit(e.target.closest('.guest-row'));
       return;

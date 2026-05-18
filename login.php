@@ -11,7 +11,7 @@ if (isset($_GET['logout'])) {
 }
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
+    header('Location: ' . (isViewer() ? 'list.php' : 'index.php'));
     exit;
 }
 
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo = getPdo();
-            $stmt = $pdo->prepare('SELECT id, username, password_hash FROM users WHERE username = :username LIMIT 1');
+            $stmt = $pdo->prepare('SELECT id, username, password_hash, role FROM users WHERE username = :username LIMIT 1');
             $stmt->execute(['username' => $username]);
             $user = $stmt->fetch();
 
@@ -34,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = (int)$user['id'];
                 $_SESSION['username'] = $user['username'];
-                header('Location: index.php');
+                $_SESSION['role'] = (($user['role'] ?? 'admin') === 'viewer') ? 'viewer' : 'admin';
+                header('Location: ' . (isViewer() ? 'list.php' : 'index.php'));
                 exit;
             }
             $error = 'Giris bilgileri hatali.';

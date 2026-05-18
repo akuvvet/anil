@@ -45,6 +45,21 @@
     background-color: #ef4444;
 }
 
+.status-badge.status-1 {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.status-2 {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.status-3 {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
 @media (max-width: 768px) {
     #tableWrap table {
         min-width: 1020px;

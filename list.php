@@ -4,9 +4,10 @@ session_start();
 require_once __DIR__ . '/config.php';
 requireLogin();
 
+$readOnly = isViewer();
 $salonCapacity = SALON_CAPACITY;
 $pdo = getPdo();
-$guests = $pdo->query('SELECT id,name,phone,email,status FROM guests ORDER BY name ASC, id ASC')->fetchAll();
+$guests = $pdo->query('SELECT id,name,phone,email,city,status FROM guests ORDER BY name ASC, id ASC')->fetchAll();
 $countsRaw = $pdo->query('SELECT status, COUNT(*) AS total FROM guests GROUP BY status')->fetchAll();
 $counts = [1 => 0, 2 => 0, 3 => 0];
 foreach ($countsRaw as $row) {
@@ -26,7 +27,7 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen bg-slate-100">
-  <nav class="bg-slate-900 text-white"><div class="max-w-7xl mx-auto px-4 py-3 flex justify-between"><span>Davetli Yonetim Paneli</span><div class="flex gap-2 text-sm"><a class="px-3 py-1.5 rounded bg-slate-700" href="index.php">Giris Formu</a><a class="px-3 py-1.5 rounded bg-indigo-600" href="list.php">Davetli Listesi</a><a class="px-3 py-1.5 rounded bg-rose-700" href="login.php?logout=1">Cikis</a></div></div></nav>
+  <nav class="bg-slate-900 text-white"><div class="max-w-7xl mx-auto px-4 py-3 flex justify-between"><span>Davetli Yonetim Paneli</span><div class="flex items-center gap-2 text-sm"><?php if ($readOnly): ?><span class="px-2 py-1 rounded bg-slate-800/80">Salt okunur</span><?php endif; ?><?php if (!$readOnly): ?><a class="px-3 py-1.5 rounded bg-slate-700" href="index.php">Giris Formu</a><?php endif; ?><a class="px-3 py-1.5 rounded bg-indigo-600" href="list.php">Davetli Listesi</a><a class="px-3 py-1.5 rounded bg-rose-700" href="login.php?logout=1">Cikis</a></div></div></nav>
   <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
     <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
       <div class="rounded-xl bg-emerald-600 text-white p-4"><p class="text-sm">Kesin Gelecekler (1)</p><p class="text-3xl font-bold" id="count-1"><?= $counts[1] ?></p></div>
@@ -48,26 +49,33 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
       </div>
       <div id="tableWrap" class="overflow-x-auto">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">ID</th><th class="px-4 py-3 text-left" title="Varsayilan liste siralamasi A-Z">Ad Soyad <span class="text-slate-400 font-normal" aria-hidden="true">(A-Z)</span></th><th class="px-4 py-3 text-left">Telefon</th><th class="px-4 py-3 text-left">Email</th><th class="px-4 py-3 text-left" title="Duzenle ile degistirilebilir">Status</th><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th></tr></thead>
+          <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">ID</th><th class="px-4 py-3 text-left" title="Varsayilan liste siralamasi A-Z">Ad Soyad <span class="text-slate-400 font-normal" aria-hidden="true">(A-Z)</span></th><th class="px-4 py-3 text-left">Telefon</th><th class="px-4 py-3 text-left">Email</th><th class="px-4 py-3 text-left">Sehir</th><th class="px-4 py-3 text-left">Status</th><?php if (!$readOnly): ?><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th><?php endif; ?></tr></thead>
           <tbody>
             <?php foreach ($guests as $g): ?>
-            <tr class="border-t guest-row" data-id="<?= (int)$g['id'] ?>" data-name="<?= htmlspecialchars($g['name'], ENT_QUOTES, 'UTF-8') ?>" data-phone="<?= htmlspecialchars((string)$g['phone'], ENT_QUOTES, 'UTF-8') ?>" data-email="<?= htmlspecialchars((string)$g['email'], ENT_QUOTES, 'UTF-8') ?>" data-status="<?= (int)$g['status'] ?>">
+            <tr class="border-t guest-row" data-id="<?= (int)$g['id'] ?>" data-name="<?= htmlspecialchars($g['name'], ENT_QUOTES, 'UTF-8') ?>" data-phone="<?= htmlspecialchars((string)$g['phone'], ENT_QUOTES, 'UTF-8') ?>" data-email="<?= htmlspecialchars((string)$g['email'], ENT_QUOTES, 'UTF-8') ?>" data-city="<?= htmlspecialchars((string)$g['city'], ENT_QUOTES, 'UTF-8') ?>" data-status="<?= (int)$g['status'] ?>">
               <td class="px-4 py-3"><?= (int)$g['id'] ?></td>
               <td class="px-4 py-3 font-medium guest-cell-name"><?= htmlspecialchars($g['name'], ENT_QUOTES, 'UTF-8') ?></td>
               <td class="px-4 py-3 guest-cell-phone"><?= htmlspecialchars((string)$g['phone'], ENT_QUOTES, 'UTF-8') ?></td>
               <td class="px-4 py-3 guest-cell-email"><?= htmlspecialchars((string)$g['email'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td class="px-4 py-3 guest-cell-city"><?= htmlspecialchars((string)$g['city'], ENT_QUOTES, 'UTF-8') ?></td>
               <td class="px-4 py-3 guest-cell-status align-top">
+                <?php if ($readOnly): ?>
+                <span class="inline-block text-xs font-medium px-2 py-1 rounded status-badge status-<?= (int)$g['status'] ?>"><?= (int)$g['status'] ?> - <?= (int)$g['status'] === 1 ? 'Mutlaka' : ((int)$g['status'] === 2 ? 'Olabilir' : 'Gerek Yok') ?></span>
+                <?php else: ?>
                 <div class="status-control">
                   <input type="range" min="1" max="3" step="1" value="<?= (int)$g['status'] ?>" class="status-slider status-<?= (int)$g['status'] ?>" data-id="<?= (int)$g['id'] ?>">
                   <span class="status-label text-xs text-slate-600 mt-1 inline-block"><?= (int)$g['status'] ?> - <span class="status-text"><?= (int)$g['status'] === 1 ? 'Mutlaka' : ((int)$g['status'] === 2 ? 'Olabilir' : 'Gerek Yok') ?></span></span>
                 </div>
+                <?php endif; ?>
               </td>
+              <?php if (!$readOnly): ?>
               <td class="px-4 py-3 guest-cell-actions align-top">
                 <div class="flex flex-wrap gap-1">
                   <button type="button" class="guest-edit-btn px-2 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700">Duzenle</button>
                   <button type="button" class="guest-delete-btn px-2 py-1 rounded text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">Sil</button>
                 </div>
               </td>
+              <?php endif; ?>
             </tr>
             <?php endforeach; ?>
           </tbody>
@@ -77,6 +85,7 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
   </main>
 
   <script>
+  const READ_ONLY = <?= $readOnly ? 'true' : 'false' ?>;
   const GUEST_API = { editUrl: 'edit_guest.php', deleteUrl: 'delete_guest.php' };
   const statusTextMap = {1:'Mutlaka',2:'Olabilir',3:'Gerek Yok'};
   let editingRow = null;
@@ -119,6 +128,7 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
     tr.querySelector('.guest-cell-name').innerHTML = b.name;
     tr.querySelector('.guest-cell-phone').innerHTML = b.phone;
     tr.querySelector('.guest-cell-email').innerHTML = b.email;
+    tr.querySelector('.guest-cell-city').innerHTML = b.city;
     tr.querySelector('.guest-cell-status').innerHTML = b.status;
     tr.querySelector('.guest-cell-actions').innerHTML = b.actions;
     delete tr._inlineBackup;
@@ -132,9 +142,10 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
     const nameTd = tr.querySelector('.guest-cell-name');
     const phoneTd = tr.querySelector('.guest-cell-phone');
     const emailTd = tr.querySelector('.guest-cell-email');
+    const cityTd = tr.querySelector('.guest-cell-city');
     const statusTd = tr.querySelector('.guest-cell-status');
     const actionsTd = tr.querySelector('.guest-cell-actions');
-    tr._inlineBackup = { name: nameTd.innerHTML, phone: phoneTd.innerHTML, email: emailTd.innerHTML, status: statusTd.innerHTML, actions: actionsTd.innerHTML };
+    tr._inlineBackup = { name: nameTd.innerHTML, phone: phoneTd.innerHTML, email: emailTd.innerHTML, city: cityTd.innerHTML, status: statusTd.innerHTML, actions: actionsTd.innerHTML };
     editingRow = tr;
     tr.classList.add('guest-row-editing');
 
@@ -156,6 +167,12 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
     inpEmail.className = 'guest-inline-field w-full min-w-[10rem] rounded border border-indigo-200 px-2 py-1 text-sm';
     inpEmail.value = tr.dataset.email || '';
     emailTd.replaceChildren(inpEmail);
+
+    const inpCity = document.createElement('input');
+    inpCity.type = 'text';
+    inpCity.className = 'guest-inline-field w-full min-w-[7rem] rounded border border-indigo-200 px-2 py-1 text-sm';
+    inpCity.value = tr.dataset.city || '';
+    cityTd.replaceChildren(inpCity);
 
     const sel = document.createElement('select');
     sel.className = 'guest-inline-status w-full max-w-[12rem] rounded border border-indigo-200 px-2 py-1 text-sm';
@@ -183,9 +200,10 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
     const name = tr.querySelector('.guest-cell-name input')?.value.trim() || '';
     const phone = tr.querySelector('.guest-cell-phone input')?.value.trim() || '';
     const email = tr.querySelector('.guest-cell-email input')?.value.trim() || '';
+    const city = tr.querySelector('.guest-cell-city input')?.value.trim() || '';
     const status = Number(tr.querySelector('.guest-inline-status')?.value || 0);
     if(!name){ alert('Ad Soyad zorunludur'); return; }
-    const res = await fetch(GUEST_API.editUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, name, phone, email, status }) });
+    const res = await fetch(GUEST_API.editUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, name, phone, email, city, status }) });
     const data = await res.json();
     if(!res.ok || !data.success){ alert(data.message || 'Kayit guncellenemedi'); return; }
     delete tr._inlineBackup;
@@ -194,10 +212,12 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
     tr.dataset.name = name;
     tr.dataset.phone = phone;
     tr.dataset.email = email;
+    tr.dataset.city = city;
     tr.dataset.status = String(status);
     tr.querySelector('.guest-cell-name').textContent = name;
     tr.querySelector('.guest-cell-phone').textContent = phone;
     tr.querySelector('.guest-cell-email').textContent = email;
+    tr.querySelector('.guest-cell-city').textContent = city;
     tr.querySelector('.guest-cell-status').innerHTML = statusCellHtml(id, status);
     tr.querySelector('.guest-cell-actions').innerHTML = actionsCellHtml();
     updateStats(data.stats);
@@ -218,12 +238,12 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
   }
 
   const tableWrap = document.getElementById('tableWrap');
-  tableWrap.addEventListener('input', (e)=>{
+  if (!READ_ONLY) tableWrap.addEventListener('input', (e)=>{
     const slider = e.target.closest('.status-slider');
     if(!slider) return;
     updateSliderStyle(slider, slider.value);
   });
-  tableWrap.addEventListener('change', (e)=>{
+  if (!READ_ONLY) tableWrap.addEventListener('change', (e)=>{
     const slider = e.target.closest('.status-slider');
     if(!slider) return;
     const status = Number(slider.value);
@@ -232,7 +252,7 @@ $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 1
     updateGuestStatus(id, status, slider);
   });
 
-  tableWrap.addEventListener('click', async (e)=>{
+  if (!READ_ONLY) tableWrap.addEventListener('click', async (e)=>{
     if(e.target.closest('.guest-inline-save')){
       await saveInlineEdit(e.target.closest('.guest-row'));
       return;
