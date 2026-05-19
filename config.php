@@ -30,6 +30,53 @@ function isViewer(): bool
     return userRole() === 'viewer';
 }
 
+function normalizeRole(string $role): string
+{
+    $r = strtolower(trim($role));
+    if ($r === 'viewer') {
+        return 'viewer';
+    }
+    if ($r === 'benutzer') {
+        return 'benutzer';
+    }
+    return 'admin';
+}
+
+function isAdmin(): bool
+{
+    return userRole() === 'admin';
+}
+
+function isBenutzer(): bool
+{
+    return userRole() === 'benutzer';
+}
+
+function currentUserId(): int
+{
+    return (int)($_SESSION['user_id'] ?? 0);
+}
+
+function canManageGuest(?int $guestUserId): bool
+{
+    if (isAdmin()) {
+        return true;
+    }
+    if (!isBenutzer()) {
+        return false;
+    }
+    $current = currentUserId();
+    if ($current <= 0 || $guestUserId === null) {
+        return false;
+    }
+    return $guestUserId === $current;
+}
+
+function canSeeGuestContact(?int $guestUserId): bool
+{
+    return canManageGuest($guestUserId);
+}
+
 function requireLogin(): void
 {
     if (!isset($_SESSION['user_id'])) {
@@ -42,7 +89,7 @@ function requireEditor(): void
 {
     requireLogin();
     if (isViewer()) {
-        header('Location: list.php');
+        header('Location: gun_akisi.php');
         exit;
     }
 }

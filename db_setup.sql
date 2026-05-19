@@ -32,19 +32,21 @@ ALTER TABLE guests
 ALTER TABLE guests
   ADD COLUMN IF NOT EXISTS city VARCHAR(80) DEFAULT NULL;
 
-INSERT INTO users (username, password_hash)
+INSERT INTO users (username, password_hash, role)
 VALUES (
   'admin',
-  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  'admin'
 )
-ON DUPLICATE KEY UPDATE username = username;
+ON DUPLICATE KEY UPDATE role = 'admin';
 
-INSERT INTO users (username, password_hash)
+INSERT INTO users (username, password_hash, role)
 VALUES (
   'enis',
-  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  'benutzer'
 )
-ON DUPLICATE KEY UPDATE username = username;
+ON DUPLICATE KEY UPDATE role = 'benutzer';
 
 INSERT INTO users (username, password_hash, role)
 VALUES (
@@ -53,3 +55,14 @@ VALUES (
   'viewer'
 )
 ON DUPLICATE KEY UPDATE role = VALUES(role);
+
+CREATE TABLE IF NOT EXISTS gun_akisi (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  tarih DATE NOT NULL,
+  saat_baslangic TIME NOT NULL,
+  saat_bitis TIME NOT NULL,
+  aksiyon VARCHAR(120) NOT NULL,
+  aciklama TEXT DEFAULT NULL,
+  sahis VARCHAR(120) DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

@@ -11,7 +11,7 @@ if (isset($_GET['logout'])) {
 }
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: ' . (isViewer() ? 'list.php' : 'index.php'));
+    header('Location: ' . (isViewer() ? 'gun_akisi.php' : 'index.php'));
     exit;
 }
 
@@ -34,8 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = (int)$user['id'];
                 $_SESSION['username'] = $user['username'];
-                $_SESSION['role'] = (($user['role'] ?? 'admin') === 'viewer') ? 'viewer' : 'admin';
-                header('Location: ' . (isViewer() ? 'list.php' : 'index.php'));
+                $_SESSION['role'] = normalizeRole((string)($user['role'] ?? 'admin'));
+                header('Location: ' . (isViewer() ? 'gun_akisi.php' : 'index.php'));
                 exit;
             }
             $error = 'Giris bilgileri hatali.';

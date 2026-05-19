@@ -1,11 +1,11 @@
 .status-control {
-    min-width: 180px;
+    min-width: 90px;
 }
 
 .status-slider {
     -webkit-appearance: none;
     appearance: none;
-    width: 150px;
+    width: 75px;
     height: 8px;
     border-radius: 9999px;
     outline: none;
@@ -125,4 +125,51 @@
 
 tr.guest-row-editing {
     background-color: #f8fafc;
+}
+
+.guest-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .guest-cell-actions {
+        white-space: nowrap;
+    }
+
+    .guest-actions {
+        flex-wrap: nowrap;
+        flex-direction: row;
+    }
+}
+
+.flow-aciklama-view,
+.flow-aciklama-field {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 12rem;
+    max-width: 28rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.flow-aciklama-view {
+    background: #f8fafc;
+    color: #334155;
+    cursor: default;
+}
+
+.flow-aciklama-field {
+    border-color: #c7d2fe;
+}
+
+.flow-cell-aciklama {
+    max-width: 28rem;
+    vertical-align: top;
 }

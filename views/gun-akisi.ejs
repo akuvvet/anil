@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gun Akisi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="min-h-screen bg-slate-100">
+  <%- include('partials/nav', { username, readOnly }) %>
+
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+    <% if (readOnly) { %><div class="rounded bg-slate-200 text-slate-700 px-3 py-2 text-sm">Salt okunur: Gun akisi tablosunu goruntuleyebilirsiniz.</div><% } %>
+    <% if (ok) { %><div class="rounded bg-emerald-100 text-emerald-700 px-3 py-2 text-sm">Kayit basariyla eklendi.</div><% } %>
+    <% if (error) { %><div class="rounded bg-red-100 text-red-700 px-3 py-2 text-sm"><%= error %></div><% } %>
+
+    <% if (!readOnly) { %>
+    <section class="bg-white border rounded-2xl p-4 sm:p-5">
+      <h1 class="text-lg font-semibold mb-4">Yeni Gun Akisi Kaydi</h1>
+      <form method="post" action="/gun-akisi" class="flow-form-row grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+        <div class="lg:col-span-2">
+          <label class="text-xs font-medium text-slate-600">Tarih</label>
+          <input type="date" name="tarih" required class="mt-1 w-full rounded border px-2 py-2 text-sm">
+        </div>
+        <div class="lg:col-span-2">
+          <label class="text-xs font-medium text-slate-600">Baslangic</label>
+          <input type="time" name="saat_baslangic" required class="mt-1 w-full rounded border px-2 py-2 text-sm">
+        </div>
+        <div class="lg:col-span-2">
+          <label class="text-xs font-medium text-slate-600">Bitis</label>
+          <input type="time" name="saat_bitis" required class="mt-1 w-full rounded border px-2 py-2 text-sm">
+        </div>
+        <div class="lg:col-span-2">
+          <label class="text-xs font-medium text-slate-600">Aksiyon</label>
+          <input type="text" name="aksiyon" required maxlength="120" class="mt-1 w-full rounded border px-2 py-2 text-sm" placeholder="Orn. Gelin hazirligi">
+        </div>
+        <div class="lg:col-span-3">
+          <label class="text-xs font-medium text-slate-600">Aciklama</label>
+          <textarea name="aciklama" maxlength="500" rows="2" class="flow-aciklama-field mt-1 w-full text-sm" placeholder="Detay"></textarea>
+        </div>
+        <div class="lg:col-span-2">
+          <label class="text-xs font-medium text-slate-600">Sahis</label>
+          <input type="text" name="sahis" maxlength="120" class="mt-1 w-full rounded border px-2 py-2 text-sm" placeholder="Kisi / ekip">
+        </div>
+        <div class="lg:col-span-1">
+          <button type="submit" class="w-full rounded bg-teal-600 text-white px-3 py-2 text-sm font-semibold hover:bg-teal-700">Ekle</button>
+        </div>
+      </form>
+    </section>
+    <% } %>
+
+    <section class="bg-white rounded-2xl overflow-hidden border">
+      <div class="p-4 border-b flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 class="text-lg font-semibold">Gun Akisi Tablosu</h2>
+        <div class="table-search ml-auto w-full sm:w-auto">
+          <input type="search" id="tableSearch" class="table-search-input" placeholder="Tabloda ara..." autocomplete="off" spellcheck="false">
+          <button type="button" id="tableSearchClear" class="table-search-clear" aria-label="Aramayi temizle" title="Temizle">
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-width="2" fill="none" d="m3 3 8 8M11 3l-8 8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="tableWrap" class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left">Tarih</th>
+              <th class="px-4 py-3 text-left">Baslangic</th><th class="px-4 py-3 text-left">Bitis</th>
+              <th class="px-4 py-3 text-left">Aksiyon</th>
+              <th class="px-4 py-3 text-left">Aciklama</th>
+              <th class="px-4 py-3 text-left">Sahis</th>
+              <% if (!readOnly) { %><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th><% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!entries.length) { %>
+            <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">Henuz kayit yok.</td></tr>
+            <% } %>
+            <% function fmtSaat(raw) {
+              const parts = String(raw || "").split(":");
+              const h = parseInt(parts[0], 10) || 0;
+              const m = parseInt(parts[1], 10) || 0;
+              return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+            } %>
+            <% for (const e of entries) {
+              let tarihVal = String(e.tarih || "").slice(0, 10);
+              if (e.tarih instanceof Date) {
+                const d = e.tarih;
+                tarihVal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              }
+              const baslangicVal = fmtSaat(e.saat_baslangic ?? e.saat);
+              const bitisVal = fmtSaat(e.saat_bitis ?? e.saat);
+              const aciklamaVal = String(e.aciklama || "");
+              const aciklamaLong = aciklamaVal.length > 80 || aciklamaVal.includes("\n");
+            %>
+            <tr class="border-t flow-row" data-id="<%= e.id %>" data-tarih="<%= tarihVal %>" data-saat-baslangic="<%= baslangicVal %>" data-saat-bitis="<%= bitisVal %>" data-aksiyon="<%= e.aksiyon %>" data-aciklama="<%= aciklamaVal %>" data-sahis="<%= e.sahis || "" %>">
+              <td class="px-4 py-3 flow-cell-tarih whitespace-nowrap"><%= tarihVal %></td>
+              <td class="px-4 py-3 flow-cell-saat-baslangic whitespace-nowrap"><%= baslangicVal %></td>
+              <td class="px-4 py-3 flow-cell-saat-bitis whitespace-nowrap"><%= bitisVal %></td>
+              <td class="px-4 py-3 flow-cell-aksiyon font-medium"><%= e.aksiyon %></td>
+              <td class="px-4 py-3 flow-cell-aciklama"><% if (aciklamaLong) { %><textarea readonly rows="<%= Math.min(6, Math.max(2, Math.ceil(aciklamaVal.length / 50))) %>" class="flow-aciklama-view"><%= aciklamaVal %></textarea><% } else { %><%= aciklamaVal %><% } %></td>
+              <td class="px-4 py-3 flow-cell-sahis"><%= e.sahis || "" %></td>
+              <td class="px-4 py-3 flow-cell-actions align-top">
+                <% if (readOnly) { %>
+                <span class="text-slate-400 text-xs">—</span>
+                <% } else { %>
+                <div class="guest-actions">
+                  <button type="button" class="flow-edit-btn px-2 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700">Duzenle</button>
+                  <button type="button" class="flow-delete-btn px-2 py-1 rounded text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">Sil</button>
+                </div>
+                <% } %>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  const READ_ONLY = <%= readOnly ? 'true' : 'false' %>;
+  const FLOW_API = { prefix: '/api/gun-akisi' };
+  const ACILIK_LIMIT = 80;
+  let editingRow = null;
+
+  function isLongAciklama(text){
+    const s = String(text || '');
+    return s.length > ACILIK_LIMIT || s.includes('\n');
+  }
+  function aciklamaRows(text){
+    const s = String(text || '');
+    return Math.min(6, Math.max(2, Math.ceil(s.length / 50) || 1));
+  }
+  function renderAciklamaCell(td, text){
+    const s = String(text || '');
+    td.replaceChildren();
+    if(!s){ return; }
+    if(isLongAciklama(s)){
+      const ta = document.createElement('textarea');
+      ta.readOnly = true;
+      ta.rows = aciklamaRows(s);
+      ta.className = 'flow-aciklama-view';
+      ta.value = s;
+      td.appendChild(ta);
+    }else{
+      td.textContent = s;
+    }
+  }
+  function createAciklamaInput(value){
+    const s = String(value || '');
+    if(isLongAciklama(s)){
+      const ta = document.createElement('textarea');
+      ta.maxLength = 500;
+      ta.rows = aciklamaRows(s);
+      ta.className = 'flow-aciklama-field flow-inline-field';
+      ta.value = s;
+      return ta;
+    }
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.maxLength = 500;
+    inp.className = 'flow-inline-field w-full min-w-[10rem] rounded border border-indigo-200 px-2 py-1 text-sm';
+    inp.value = s;
+    return inp;
+  }
+  function readAciklamaValue(td){
+    const field = td.querySelector('textarea, input');
+    return field ? String(field.value || '').trim() : '';
+  }
+
+  function actionsCellHtml(){
+    return `<div class="guest-actions">
+      <button type="button" class="flow-edit-btn px-2 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700">Duzenle</button>
+      <button type="button" class="flow-delete-btn px-2 py-1 rounded text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">Sil</button>
+    </div>`;
+  }
+
+  function cancelInlineEdit(tr){
+    if(!tr || !tr._inlineBackup) return;
+    const b = tr._inlineBackup;
+    tr.querySelector('.flow-cell-tarih').innerHTML = b.tarih;
+    tr.querySelector('.flow-cell-saat-baslangic').innerHTML = b.saatBaslangic;
+    tr.querySelector('.flow-cell-saat-bitis').innerHTML = b.saatBitis;
+    tr.querySelector('.flow-cell-aksiyon').innerHTML = b.aksiyon;
+    tr.querySelector('.flow-cell-aciklama').innerHTML = b.aciklama;
+    tr.querySelector('.flow-cell-sahis').innerHTML = b.sahis;
+    tr.querySelector('.flow-cell-actions').innerHTML = b.actions;
+    delete tr._inlineBackup;
+    if(editingRow === tr) editingRow = null;
+    tr.classList.remove('guest-row-editing');
+  }
+
+  function startInlineEdit(tr){
+    if(tr._inlineBackup) return;
+    if(editingRow && editingRow !== tr) cancelInlineEdit(editingRow);
+    const tarihTd = tr.querySelector('.flow-cell-tarih');
+    const saatBaslangicTd = tr.querySelector('.flow-cell-saat-baslangic');
+    const saatBitisTd = tr.querySelector('.flow-cell-saat-bitis');
+    const aksiyonTd = tr.querySelector('.flow-cell-aksiyon');
+    const aciklamaTd = tr.querySelector('.flow-cell-aciklama');
+    const sahisTd = tr.querySelector('.flow-cell-sahis');
+    const actionsTd = tr.querySelector('.flow-cell-actions');
+    tr._inlineBackup = { tarih: tarihTd.innerHTML, saatBaslangic: saatBaslangicTd.innerHTML, saatBitis: saatBitisTd.innerHTML, aksiyon: aksiyonTd.innerHTML, aciklama: aciklamaTd.innerHTML, sahis: sahisTd.innerHTML, actions: actionsTd.innerHTML };
+    editingRow = tr;
+    tr.classList.add('guest-row-editing');
+
+    const inpTarih = document.createElement('input');
+    inpTarih.type = 'date';
+    inpTarih.required = true;
+    inpTarih.className = 'flow-inline-field w-full min-w-[9rem] rounded border border-indigo-200 px-2 py-1 text-sm';
+    inpTarih.value = tr.dataset.tarih || '';
+    tarihTd.replaceChildren(inpTarih);
+
+    const inpBaslangic = document.createElement('input');
+    inpBaslangic.type = 'time';
+    inpBaslangic.required = true;
+    inpBaslangic.className = 'flow-inline-field w-full min-w-[7rem] rounded border border-indigo-200 px-2 py-1 text-sm';
+    inpBaslangic.value = tr.dataset.saatBaslangic || '';
+    saatBaslangicTd.replaceChildren(inpBaslangic);
+    const inpBitis = document.createElement('input');
+    inpBitis.type = 'time';
+    inpBitis.required = true;
+    inpBitis.className = 'flow-inline-field w-full min-w-[7rem] rounded border border-indigo-200 px-2 py-1 text-sm';
+    inpBitis.value = tr.dataset.saatBitis || '';
+    saatBitisTd.replaceChildren(inpBitis);
+
+    const inpAksiyon = document.createElement('input');
+    inpAksiyon.type = 'text';
+    inpAksiyon.required = true;
+    inpAksiyon.maxLength = 120;
+    inpAksiyon.className = 'flow-inline-field w-full min-w-[8rem] rounded border border-indigo-200 px-2 py-1 text-sm font-medium';
+    inpAksiyon.value = tr.dataset.aksiyon || '';
+    aksiyonTd.replaceChildren(inpAksiyon);
+
+    aciklamaTd.replaceChildren(createAciklamaInput(tr.dataset.aciklama || ''));
+
+    const inpSahis = document.createElement('input');
+    inpSahis.type = 'text';
+    inpSahis.maxLength = 120;
+    inpSahis.className = 'flow-inline-field w-full min-w-[7rem] rounded border border-indigo-200 px-2 py-1 text-sm';
+    inpSahis.value = tr.dataset.sahis || '';
+    sahisTd.replaceChildren(inpSahis);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'guest-actions';
+    const btnSave = document.createElement('button');
+    btnSave.type = 'button';
+    btnSave.className = 'flow-inline-save px-2 py-1 rounded text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700';
+    btnSave.textContent = 'Kaydet';
+    const btnCancel = document.createElement('button');
+    btnCancel.type = 'button';
+    btnCancel.className = 'flow-inline-cancel px-2 py-1 rounded text-xs font-medium border border-slate-300 bg-white hover:bg-slate-50';
+    btnCancel.textContent = 'Iptal';
+    wrap.append(btnSave, btnCancel);
+    actionsTd.replaceChildren(wrap);
+    inpTarih.focus();
+  }
+
+  async function saveInlineEdit(tr){
+    const id = Number(tr.dataset.id);
+    const tarih = tr.querySelector('.flow-cell-tarih input')?.value.trim() || '';
+    const saatBaslangic = tr.querySelector('.flow-cell-saat-baslangic input')?.value.trim() || '';
+    const saatBitis = tr.querySelector('.flow-cell-saat-bitis input')?.value.trim() || '';
+    const aksiyon = tr.querySelector('.flow-cell-aksiyon input')?.value.trim() || '';
+    const aciklama = readAciklamaValue(tr.querySelector('.flow-cell-aciklama'));
+    const sahis = tr.querySelector('.flow-cell-sahis input')?.value.trim() || '';
+    if(!tarih || !saatBaslangic || !saatBitis || !aksiyon){ alert('Tarih, baslangic/bitis saati ve aksiyon zorunludur'); return; }
+    if(padSaat(saatBitis) < padSaat(saatBaslangic)){ alert('Bitis saati baslangic saatinden once olamaz'); return; }
+    const res = await fetch(`${FLOW_API.prefix}/${id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ tarih, saat_baslangic: saatBaslangic, saat_bitis: saatBitis, aksiyon, aciklama, sahis }) });
+    const ct = res.headers.get('content-type') || '';
+    const data = ct.includes('application/json') ? await res.json() : { success: false, message: await res.text().catch(()=>'Sunucu yaniti gecersiz') };
+    if(!res.ok || !data.success){ alert(data.message || 'Kayit guncellenemedi'); return; }
+    delete tr._inlineBackup;
+    editingRow = null;
+    tr.classList.remove('guest-row-editing');
+    tr.dataset.tarih = tarih;
+    tr.dataset.saatBaslangic = padSaat(saatBaslangic);
+    tr.dataset.saatBitis = padSaat(saatBitis);
+    tr.dataset.aksiyon = aksiyon;
+    tr.dataset.aciklama = aciklama;
+    tr.dataset.sahis = sahis;
+    tr.querySelector('.flow-cell-tarih').textContent = tarih;
+    tr.querySelector('.flow-cell-saat-baslangic').textContent = padSaat(saatBaslangic);
+    tr.querySelector('.flow-cell-saat-bitis').textContent = padSaat(saatBitis);
+    tr.querySelector('.flow-cell-aksiyon').textContent = aksiyon;
+    renderAciklamaCell(tr.querySelector('.flow-cell-aciklama'), aciklama);
+    tr.querySelector('.flow-cell-sahis').textContent = sahis;
+    tr.querySelector('.flow-cell-actions').innerHTML = actionsCellHtml();
+    sortFlowTable();
+    applyTableFilter();
+  }
+
+  function padSaat(value){
+    const parts = String(value || "").split(":");
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+  function compareFlowRows(a, b){
+    const td = String(a.dataset.tarih || "").localeCompare(String(b.dataset.tarih || ""));
+    if (td !== 0) return td;
+    const sb = padSaat(a.dataset.saatBaslangic).localeCompare(padSaat(b.dataset.saatBaslangic));
+    if (sb !== 0) return sb;
+    return padSaat(a.dataset.saatBitis).localeCompare(padSaat(b.dataset.saatBitis));
+  }
+  function sortFlowTable(){
+    if(editingRow) return;
+    const tbody = document.querySelector('#tableWrap tbody');
+    if(!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll('tr.flow-row'));
+    rows.sort(compareFlowRows);
+    for(const r of rows) tbody.appendChild(r);
+  }
+
+  const tableWrap = document.getElementById('tableWrap');
+  if (!READ_ONLY && tableWrap) tableWrap.addEventListener('click', async (e)=>{
+    if(e.target.closest('.flow-inline-save')){
+      await saveInlineEdit(e.target.closest('.flow-row'));
+      return;
+    }
+    if(e.target.closest('.flow-inline-cancel')){
+      cancelInlineEdit(e.target.closest('.flow-row'));
+      return;
+    }
+    if(e.target.closest('.flow-edit-btn')){
+      startInlineEdit(e.target.closest('.flow-row'));
+      return;
+    }
+    const delBtn = e.target.closest('.flow-delete-btn');
+    if(delBtn){
+      const tr = delBtn.closest('.flow-row');
+      const id = Number(tr.dataset.id);
+      if(!id || !confirm('Bu kaydi silmek istediginize emin misiniz?')) return;
+      const res = await fetch(`${FLOW_API.prefix}/${id}`, { method:'DELETE' });
+      const data = await res.json();
+      if(!res.ok || !data.success){ alert(data.message || 'Silme basarisiz'); return; }
+      if(editingRow === tr) editingRow = null;
+      tr.remove();
+    }
+  });
+
+  const tableSearch = document.getElementById('tableSearch');
+  const tableSearchClear = document.getElementById('tableSearchClear');
+  const tableRows = () => document.querySelectorAll('#tableWrap tbody tr');
+  function applyTableFilter(){
+    const q = (tableSearch && tableSearch.value || '').trim().toLowerCase();
+    if (tableSearchClear) tableSearchClear.classList.toggle('is-visible', q.length > 0);
+    tableRows().forEach((tr) => {
+      const hay = tr.innerText.toLowerCase().replace(/\s+/g, ' ');
+      tr.style.display = !q || hay.includes(q) ? '' : 'none';
+    });
+  }
+  if (tableSearch) {
+    tableSearch.addEventListener('input', applyTableFilter);
+    tableSearch.addEventListener('search', applyTableFilter);
+  }
+  if (tableSearchClear && tableSearch) {
+    tableSearchClear.addEventListener('click', () => {
+      tableSearch.value = '';
+      tableSearch.focus();
+      applyTableFilter();
+    });
+  }
+  sortFlowTable();
+  applyTableFilter();
+  </script>
+</body>
+</html>

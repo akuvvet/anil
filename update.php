@@ -19,6 +19,20 @@ if ($id <= 0 || !in_array($status, [1,2,3], true)) {
 
 try {
     $pdo = getPdo();
+    $ownerStmt = $pdo->prepare('SELECT user_id FROM guests WHERE id = ? LIMIT 1');
+    $ownerStmt->execute([$id]);
+    $guest = $ownerStmt->fetch();
+    if (!$guest) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Kayit bulunamadi.']);
+        exit;
+    }
+    $guestUserId = $guest['user_id'] !== null ? (int)$guest['user_id'] : null;
+    if (!canManageGuest($guestUserId)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Bu kaydi guncelleme yetkiniz yok.']);
+        exit;
+    }
     $stmt = $pdo->prepare('UPDATE guests SET status = :status WHERE id = :id');
     $stmt->execute(['status' => $status, 'id' => $id]);
 

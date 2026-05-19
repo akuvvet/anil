@@ -3,6 +3,7 @@ declare(strict_types=1);
 session_start();
 require_once __DIR__ . '/config.php';
 requireEditor();
+$readOnly = false;
 $success = '';
 $error = '';
 
@@ -20,13 +21,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo = getPdo();
-            $stmt = $pdo->prepare('INSERT INTO guests (name, phone, email, city, status) VALUES (:name,:phone,:email,:city,:status)');
+            $userId = currentUserId();
+            $stmt = $pdo->prepare('INSERT INTO guests (name, phone, email, city, status, user_id) VALUES (:name,:phone,:email,:city,:status,:user_id)');
             $stmt->execute([
                 'name' => $name,
                 'phone' => $phone !== '' ? $phone : null,
                 'email' => $email !== '' ? $email : null,
                 'city' => $city !== '' ? $city : null,
-                'status' => $status
+                'status' => $status,
+                'user_id' => $userId > 0 ? $userId : null,
             ]);
             header('Location: index.php?ok=1');
             exit;
@@ -47,7 +50,8 @@ if (isset($_GET['ok'])) $success = 'Davetli basariyla kaydedildi.';
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen bg-slate-100">
-  <nav class="bg-slate-900 text-white"><div class="max-w-6xl mx-auto px-4 py-3 flex justify-between"><span>Davetli Yonetim Paneli</span><div class="flex gap-2 text-sm"><a class="px-3 py-1.5 rounded bg-indigo-600" href="index.php">Giris Formu</a><a class="px-3 py-1.5 rounded bg-slate-700" href="list.php">Davetli Listesi</a><a class="px-3 py-1.5 rounded bg-rose-700" href="login.php?logout=1">Cikis</a></div></div></nav>
+  <?php require __DIR__ . '/includes/nav.php'; ?>
+
   <main class="max-w-3xl mx-auto p-4 sm:p-6">
     <section class="bg-white border rounded-2xl p-6">
       <h1 class="text-xl font-bold">Davetli Veri Girisi</h1>

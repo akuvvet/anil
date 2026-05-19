@@ -23,13 +23,29 @@ if ($id <= 0 || $name === '' || !in_array($status, [1, 2, 3], true)) {
 
 try {
     $pdo = getPdo();
-    $stmt = $pdo->prepare('UPDATE guests SET name = :name, phone = :phone, email = :email, city = :city, status = :status WHERE id = :id');
+    $ownerStmt = $pdo->prepare('SELECT user_id FROM guests WHERE id = ? LIMIT 1');
+    $ownerStmt->execute([$id]);
+    $guest = $ownerStmt->fetch();
+    if (!$guest) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Kayit bulunamadi.']);
+        exit;
+    }
+    $guestUserId = $guest['user_id'] !== null ? (int)$guest['user_id'] : null;
+    if (!canManageGuest($guestUserId)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Bu kaydi guncelleme yetkiniz yok.']);
+        exit;
+    }
+    $ownerId = $guest['user_id'] !== null ? (int)$guest['user_id'] : currentUserId();
+    $stmt = $pdo->prepare('UPDATE guests SET name = :name, phone = :phone, email = :email, city = :city, status = :status, user_id = :user_id WHERE id = :id');
     $stmt->execute([
         'name' => $name,
         'phone' => $phone !== '' ? $phone : null,
         'email' => $email !== '' ? $email : null,
         'city' => $city !== '' ? $city : null,
         'status' => $status,
+        'user_id' => $ownerId,
         'id' => $id,
     ]);
 

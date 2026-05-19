@@ -8,7 +8,8 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="min-h-screen bg-slate-100">
-  <nav class="bg-slate-900 text-white"><div class="max-w-6xl mx-auto px-4 py-3 flex justify-between"><span>Davetli Yonetim Paneli</span><div class="flex gap-2 text-sm"><a class="px-3 py-1.5 rounded bg-indigo-600" href="/">Giris Formu</a><a class="px-3 py-1.5 rounded bg-slate-700" href="/list">Davetli Listesi</a><a class="px-3 py-1.5 rounded bg-rose-700" href="/logout">Cikis</a></div></div></nav>
+  <%- include('partials/nav', { username, readOnly: false }) %>
+
   <main class="max-w-3xl mx-auto p-4 sm:p-6">
     <section class="bg-white border rounded-2xl p-6">
       <h1 class="text-xl font-bold">Davetli Veri Girisi</h1>

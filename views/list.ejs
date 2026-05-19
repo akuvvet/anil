@@ -8,7 +8,8 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="min-h-screen bg-slate-100">
-  <nav class="bg-slate-900 text-white"><div class="max-w-7xl mx-auto px-4 py-3 flex justify-between"><span>Davetli Yonetim Paneli</span><div class="flex items-center gap-2 text-sm"><span class="px-2 py-1 rounded bg-slate-800/80">Kullanici: <%= typeof username !== "undefined" ? username : "-" %></span><% if (readOnly) { %><span class="px-2 py-1 rounded bg-slate-800/80">Salt okunur</span><% } %><% if (!readOnly) { %><a class="px-3 py-1.5 rounded bg-slate-700" href="/">Giris Formu</a><% } %><a class="px-3 py-1.5 rounded bg-indigo-600" href="/list">Davetli Listesi</a><a class="px-3 py-1.5 rounded bg-rose-700" href="/logout">Cikis</a></div></div></nav>
+  <%- include('partials/nav', { username, readOnly }) %>
+
   <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
     <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
       <div class="rounded-xl bg-emerald-600 text-white p-4"><p class="text-sm">Kesin Gelecekler (1)</p><p class="text-3xl font-bold" id="count-1"><%= stats.count1 %></p></div>
@@ -30,17 +31,21 @@
       </div>
       <div id="tableWrap" class="overflow-x-auto">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">ID</th><th class="px-4 py-3 text-left" title="Isme gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="name" aria-label="Ad Soyad sirala">Ad Soyad <span class="sort-indicator text-slate-400" aria-hidden="true">A-Z</span></button></th><th class="px-4 py-3 text-left">Telefon</th><th class="px-4 py-3 text-left">Email</th><th class="px-4 py-3 text-left">Sehir</th><th class="px-4 py-3 text-left" title="Statusa gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="status" aria-label="Status sirala">Status <span class="sort-indicator text-slate-400" aria-hidden="true"></span></button></th><% if (!readOnly) { %><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th><% } %></tr></thead>
+          <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">ID</th><th class="px-4 py-3 text-left" title="Isme gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="name" aria-label="Ad Soyad sirala">Ad Soyad <span class="sort-indicator text-slate-400" aria-hidden="true">A-Z</span></button></th><% if (!readOnly) { %><th class="px-4 py-3 text-left">Telefon</th><th class="px-4 py-3 text-left">Email</th><% } %><th class="px-4 py-3 text-left" title="Sehire gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="city" aria-label="Sehir sirala">Sehir <span class="sort-indicator text-slate-400" aria-hidden="true"></span></button></th><th class="px-4 py-3 text-left" title="Statusa gore siralama"><button type="button" class="sort-btn inline-flex items-center gap-1 font-semibold text-left text-slate-800 hover:text-indigo-700" data-sort-key="status" aria-label="Status sirala">Status <span class="sort-indicator text-slate-400" aria-hidden="true"></span></button></th><% if (!readOnly) { %><th class="px-4 py-3 text-left whitespace-nowrap">Islem</th><% } %></tr></thead>
           <tbody>
-            <% for (const g of guests) { %>
-            <tr class="border-t guest-row" data-id="<%= g.id %>" data-name="<%= g.name %>" data-phone="<%= g.phone || "" %>" data-email="<%= g.email || "" %>" data-city="<%= g.city || "" %>" data-status="<%= g.status %>" data-user-id="<%= g.user_id == null ? "" : g.user_id %>">
+            <% for (const g of guests) {
+              const guestUserId = g.user_id == null ? null : Number(g.user_id);
+              const ownsGuest = guestUserId !== null && guestUserId === currentUserId;
+              const canManage = isAdmin || ownsGuest;
+              const canSeeContact = isAdmin || ownsGuest;
+            %>
+            <tr class="border-t guest-row" data-id="<%= g.id %>" data-name="<%= g.name %>"<% if (canSeeContact) { %> data-phone="<%= g.phone || "" %>" data-email="<%= g.email || "" %>"<% } %> data-city="<%= g.city || "" %>" data-status="<%= g.status %>" data-user-id="<%= g.user_id == null ? "" : g.user_id %>" data-can-manage="<%= canManage ? "1" : "0" %>">
               <td class="px-4 py-3"><%= g.id %></td>
               <td class="px-4 py-3 font-medium guest-cell-name"><%= g.name %></td>
-              <td class="px-4 py-3 guest-cell-phone"><%= g.phone || "" %></td>
-              <td class="px-4 py-3 guest-cell-email"><%= g.email || "" %></td>
+              <% if (!readOnly) { %><td class="px-4 py-3 guest-cell-phone text-slate-500"><%= canSeeContact ? (g.phone || "") : "—" %></td><td class="px-4 py-3 guest-cell-email text-slate-500"><%= canSeeContact ? (g.email || "") : "—" %></td><% } %>
               <td class="px-4 py-3 guest-cell-city"><%= g.city || "" %></td>
               <td class="px-4 py-3 guest-cell-status align-top">
-                <% if (readOnly) { %>
+                <% if (readOnly || !canManage) { %>
                 <span class="inline-block text-xs font-medium px-2 py-1 rounded status-badge status-<%= g.status %>"><%= g.status %> - <%= g.status === 1 ? "Mutlaka" : (g.status === 2 ? "Olabilir" : "Gerek Yok") %></span>
                 <% } else { %>
                 <div class="status-control">
@@ -51,10 +56,12 @@
               </td>
               <% if (!readOnly) { %>
               <td class="px-4 py-3 guest-cell-actions align-top">
-                <div class="flex flex-wrap gap-1">
+                <% if (canManage) { %>
+                <div class="guest-actions">
                   <button type="button" class="guest-edit-btn px-2 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700">Duzenle</button>
-                  <% if ((typeof currentUserId !== "undefined" && currentUserId === 1) || (typeof currentUserId !== "undefined" && g.user_id != null && Number(g.user_id) === currentUserId)) { %><button type="button" class="guest-delete-btn px-2 py-1 rounded text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">Sil</button><% } %>
+                  <button type="button" class="guest-delete-btn px-2 py-1 rounded text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">Sil</button>
                 </div>
+                <% } %>
               </td>
               <% } %>
             </tr>
@@ -70,7 +77,17 @@
   const GUEST_API = { prefix: '/api/guest' };
   const statusTextMap = {1:'Mutlaka',2:'Olabilir',3:'Gerek Yok'};
   const CURRENT_USER_ID = <%= typeof currentUserId !== "undefined" ? Number(currentUserId || 0) : 0 %>;
+  const IS_ADMIN = <%= typeof isAdmin !== "undefined" && isAdmin ? "true" : "false" %>;
   let editingRow = null;
+
+  function canManageGuestRow(tr){
+    if(IS_ADMIN) return true;
+    return tr.dataset.canManage === '1';
+  }
+  function canSeeContactRow(tr){
+    if(IS_ADMIN) return true;
+    return tr.dataset.canManage === '1';
+  }
 
   function updateSliderStyle(slider, status){ slider.classList.remove('status-1','status-2','status-3'); slider.classList.add(`status-${status}`); }
   function updateStats(stats){ document.getElementById('count-1').textContent=stats.count_1; document.getElementById('count-2').textContent=stats.count_2; document.getElementById('count-3').textContent=stats.count_3; document.getElementById('total-guests').textContent=stats.total_guests; document.getElementById('occupancy-rate').textContent=`${stats.occupancy_rate}%`; }
@@ -84,6 +101,13 @@
   }
   const sortState = { key: 'name', direction: 'asc' };
 
+  function guestRowCityForSort(tr){
+    const cell = tr.querySelector('.guest-cell-city');
+    if(!cell) return '';
+    const inp = cell.querySelector('input.guest-inline-field');
+    if(inp) return String(inp.value || '').trim();
+    return String(cell.textContent || '').trim();
+  }
   function guestRowStatusForSort(tr){
     return Number(tr.dataset.status || 0);
   }
@@ -94,6 +118,11 @@
     if(sortState.key === 'status'){
       const diff = (guestRowStatusForSort(a) - guestRowStatusForSort(b)) * sortDirectionFactor();
       if(diff !== 0) return diff;
+      return guestRowNameForSort(a).localeCompare(guestRowNameForSort(b), 'tr', { sensitivity: 'base' });
+    }
+    if(sortState.key === 'city'){
+      const cmp = guestRowCityForSort(a).localeCompare(guestRowCityForSort(b), 'tr', { sensitivity: 'base' }) * sortDirectionFactor();
+      if(cmp !== 0) return cmp;
       return guestRowNameForSort(a).localeCompare(guestRowNameForSort(b), 'tr', { sensitivity: 'base' });
     }
     return guestRowNameForSort(a).localeCompare(guestRowNameForSort(b), 'tr', { sensitivity: 'base' }) * sortDirectionFactor();
@@ -110,6 +139,7 @@
         return;
       }
       if(key === 'name') indicator.textContent = sortState.direction === 'asc' ? 'A-Z' : 'Z-A';
+      if(key === 'city') indicator.textContent = sortState.direction === 'asc' ? 'A-Z' : 'Z-A';
       if(key === 'status') indicator.textContent = sortState.direction === 'asc' ? '1-3' : '3-1';
       btn.classList.add('text-indigo-700');
     });
@@ -140,16 +170,13 @@
       <span class="status-label text-xs text-slate-600 mt-1 inline-block">${status} - <span class="status-text">${statusTextMap[status]}</span></span>
     </div>`;
   }
-  function canDeleteGuestByUserId(guestUserId){
-    if(CURRENT_USER_ID === 1) return true;
-    if(guestUserId === null || guestUserId === undefined || guestUserId === '') return false;
-    return Number(guestUserId) === CURRENT_USER_ID;
+  function statusBadgeHtml(status){
+    return `<span class="inline-block text-xs font-medium px-2 py-1 rounded status-badge status-${status}">${status} - ${statusTextMap[status]}</span>`;
   }
-  function actionsCellHtml(guestUserId){
-    const canDelete = canDeleteGuestByUserId(guestUserId);
-    return `<div class="flex flex-wrap gap-1">
+  function actionsCellHtml(){
+    return `<div class="guest-actions">
       <button type="button" class="guest-edit-btn px-2 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700">Duzenle</button>
-      ${canDelete ? '<button type="button" class="guest-delete-btn px-2 py-1 rounded text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">Sil</button>' : ''}
+      <button type="button" class="guest-delete-btn px-2 py-1 rounded text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">Sil</button>
     </div>`;
   }
 
@@ -168,6 +195,7 @@
   }
 
   function startInlineEdit(tr){
+    if(!canManageGuestRow(tr)) return;
     if(tr._inlineBackup) return;
     if(editingRow && editingRow !== tr) cancelInlineEdit(editingRow);
     const nameTd = tr.querySelector('.guest-cell-name');
@@ -212,7 +240,7 @@
     statusTd.replaceChildren(sel);
 
     const wrap = document.createElement('div');
-    wrap.className = 'flex flex-wrap gap-1';
+    wrap.className = 'guest-actions';
     const btnSave = document.createElement('button');
     btnSave.type = 'button';
     btnSave.className = 'guest-inline-save px-2 py-1 rounded text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700';
@@ -242,17 +270,20 @@
     editingRow = null;
     tr.classList.remove('guest-row-editing');
     tr.dataset.name = name;
-    tr.dataset.phone = phone;
-    tr.dataset.email = email;
     tr.dataset.city = city;
     tr.dataset.status = String(status);
+    if(canSeeContactRow(tr)){
+      tr.dataset.phone = phone;
+      tr.dataset.email = email;
+    }
+    tr.dataset.canManage = '1';
     tr.dataset.userId = String(CURRENT_USER_ID || '');
     tr.querySelector('.guest-cell-name').textContent = name;
-    tr.querySelector('.guest-cell-phone').textContent = phone;
-    tr.querySelector('.guest-cell-email').textContent = email;
+    tr.querySelector('.guest-cell-phone').textContent = canSeeContactRow(tr) ? phone : '—';
+    tr.querySelector('.guest-cell-email').textContent = canSeeContactRow(tr) ? email : '—';
     tr.querySelector('.guest-cell-city').textContent = city;
-    tr.querySelector('.guest-cell-status').innerHTML = statusCellHtml(id, status);
-    tr.querySelector('.guest-cell-actions').innerHTML = actionsCellHtml(tr.dataset.userId);
+    tr.querySelector('.guest-cell-status').innerHTML = canManageGuestRow(tr) ? statusCellHtml(id, status) : statusBadgeHtml(status);
+    tr.querySelector('.guest-cell-actions').innerHTML = actionsCellHtml();
     updateStats(data.stats);
     sortGuestTable();
     applyTableFilter();
@@ -279,6 +310,8 @@
   if (!READ_ONLY) tableWrap.addEventListener('change', (e)=>{
     const slider = e.target.closest('.status-slider');
     if(!slider) return;
+    const tr = slider.closest('.guest-row');
+    if(tr && !canManageGuestRow(tr)) return;
     const status = Number(slider.value);
     const id = Number(slider.dataset.id);
     updateSliderStyle(slider, status);
