@@ -304,6 +304,7 @@ function countStats(rows) {
     count2: stats[2],
     count3: stats[3],
     confirmedPersons: 0,
+    confirmedGuestCount: 0,
     declinedRsvpCount: 0,
     totalGuests: total,
     capacity: SALON_CAPACITY,
@@ -313,18 +314,22 @@ function countStats(rows) {
 
 const GUEST_STATS_SQL = "SELECT status, COUNT(*) AS total FROM guests GROUP BY status";
 const CONFIRMED_PERSONS_SQL =
-  "SELECT COALESCE(SUM(party_size), 0) AS total FROM guests WHERE rsvp_at IS NOT NULL AND party_size > 0";
+  "SELECT COALESCE(SUM(party_size), 0) AS total FROM guests WHERE party_size IS NOT NULL AND party_size > 0";
+const CONFIRMED_GUESTS_SQL =
+  "SELECT COUNT(*) AS total FROM guests WHERE party_size IS NOT NULL AND party_size > 0";
 const DECLINED_RSVP_SQL =
-  "SELECT COUNT(*) AS total FROM guests WHERE rsvp_at IS NOT NULL AND party_size = 0";
+  "SELECT COUNT(*) AS total FROM guests WHERE party_size = 0 AND rsvp_at IS NOT NULL";
 
 async function fetchGuestStats() {
-  const [countRows, confirmedRows, declinedRows] = await Promise.all([
+  const [countRows, confirmedRows, confirmedGuestRows, declinedRows] = await Promise.all([
     pool.query(GUEST_STATS_SQL),
     pool.query(CONFIRMED_PERSONS_SQL),
+    pool.query(CONFIRMED_GUESTS_SQL),
     pool.query(DECLINED_RSVP_SQL)
   ]);
   const stats = countStats(countRows[0]);
   stats.confirmedPersons = Number(confirmedRows[0][0]?.total ?? 0);
+  stats.confirmedGuestCount = Number(confirmedGuestRows[0][0]?.total ?? 0);
   stats.declinedRsvpCount = Number(declinedRows[0][0]?.total ?? 0);
   return stats;
 }
@@ -731,6 +736,7 @@ function statsPayload(stats) {
     total_guests: stats.totalGuests,
     occupancy_rate: stats.occupancyRate,
     confirmed_persons: stats.confirmedPersons,
+    confirmed_guest_count: stats.confirmedGuestCount,
     declined_rsvp_count: stats.declinedRsvpCount
   };
 }
