@@ -391,3 +391,24 @@ tr.guest-row-rsvp-declined:hover {
 .guest-page-select-label {
     margin-left: auto;
 }
+
+.guest-page-nav-btn {
+    padding: 0.35rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.45rem;
+    background: #fff;
+    color: #334155;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.guest-page-nav-btn:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.guest-page-nav-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
