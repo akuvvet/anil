@@ -308,6 +308,44 @@ tr.guest-row-editing {
     background: #ffe4e6;
 }
 
+.rsvp-calendar-suggest {
+    margin-bottom: 0.25rem;
+}
+
+.rsvp-calendar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.rsvp-calendar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.85rem;
+    border-radius: 0.6rem;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.rsvp-calendar-btn:hover {
+    background: #4338ca;
+}
+
+.rsvp-calendar-btn-secondary {
+    background: #fff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+}
+
+.rsvp-calendar-btn-secondary:hover {
+    background: #eef2ff;
+}
+
 .guest-cell-kullanici {
     max-width: 3.5rem;
     text-align: center;

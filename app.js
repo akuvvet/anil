@@ -111,6 +111,45 @@ function getPublicBaseUrl(req) {
   return `${req.protocol}://${req.get("host")}`;
 }
 
+const WEDDING_CALENDAR = {
+  title: "Zeynep ve Enis'in dügünü",
+  date: "20270116",
+  start: "160000",
+  end: "230000",
+  timezone: "Europe/Istanbul"
+};
+
+function escapeIcsText(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
+}
+
+function buildWeddingIcs() {
+  const { title, date, start, end, timezone } = WEDDING_CALENDAR;
+  const uid = `wedding-${date}@davetiye`;
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Davetiye//Wedding//TR",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART;TZID=${timezone}:${date}T${start}`,
+    `DTEND;TZID=${timezone}:${date}T${end}`,
+    `SUMMARY:${escapeIcsText(title)}`,
+    `DESCRIPTION:${escapeIcsText("Zeynep ve Enis dugunu - 16:00 - 23:00")}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+    ""
+  ].join("\r\n");
+}
+
 function normalizeNameForMatch(value) {
   return String(value || "")
     .toLocaleLowerCase("tr")
@@ -562,10 +601,27 @@ app.get("/davet/:token", async (req, res) => {
       token,
       guest,
       submitted: req.query.ok === "1",
-      error: ""
+      error: "",
+      calendar: WEDDING_CALENDAR,
+      showCalendar: Number(guest.status) === 1 && !!guest.rsvp_at && Number(guest.party_size || 0) > 0
     });
   } catch (err) {
     res.status(500).send("Sunucu hatasi: " + err.message);
+  }
+});
+
+app.get("/davet/:token/takvim.ics", async (req, res) => {
+  const token = String(req.params.token || "").trim();
+  if (!token) return res.status(404).send("Davet bulunamadi.");
+  try {
+    const [rows] = await pool.query("SELECT id FROM guests WHERE invite_token = ? LIMIT 1", [token]);
+    if (!rows[0]) return res.status(404).send("Davet bulunamadi.");
+    res.set("Cache-Control", "no-store");
+    res.set("Content-Type", "text/calendar; charset=utf-8");
+    res.set("Content-Disposition", 'attachment; filename="zeynep-enis-dugunu.ics"');
+    return res.send(buildWeddingIcs());
+  } catch (err) {
+    return res.status(500).send("Sunucu hatasi: " + err.message);
   }
 });
 
