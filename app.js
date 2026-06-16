@@ -1,4 +1,5 @@
 const path = require("path");
+const crypto = require("crypto");
 const express = require("express");
 const session = require("express-session");
 const dotenv = require("dotenv");
@@ -102,6 +103,118 @@ function isValidSaatRange(baslangic, bitis) {
   return b !== "" && e !== "" && b <= e;
 }
 
+function generateInviteToken() {
+  return crypto.randomBytes(24).toString("hex");
+}
+
+function getPublicBaseUrl(req) {
+  const envBase = String(process.env.PUBLIC_BASE_URL || "").trim().replace(/\/$/, "");
+  if (envBase) return envBase;
+  return `${req.protocol}://${req.get("host")}`;
+}
+
+function normalizeNameForMatch(value) {
+  return String(value || "")
+    .toLocaleLowerCase("tr")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/ı/g, "i")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function levenshtein(a, b) {
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i += 1) dp[i][0] = i;
+  for (let j = 0; j <= n; j += 1) dp[0][j] = j;
+  for (let i = 1; i <= m; i += 1) {
+    for (let j = 1; j <= n; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+function scoreGuestNameMatch(query, name) {
+  const q = normalizeNameForMatch(query);
+  const n = normalizeNameForMatch(name);
+  if (!q || !n) return 0;
+  if (n === q) return 100;
+  if (n.startsWith(q)) return 92;
+  if (n.includes(q)) return 85;
+  const qParts = q.split(" ").filter(Boolean);
+  const nParts = n.split(" ").filter(Boolean);
+  if (qParts.length && qParts.every((part) => nParts.some((np) => np.startsWith(part) || np.includes(part)))) {
+    return 78;
+  }
+  const dist = levenshtein(q, n);
+  const maxLen = Math.max(q.length, n.length);
+  const ratio = 1 - dist / maxLen;
+  return ratio >= 0.55 ? Math.round(ratio * 70) : 0;
+}
+
+function findMatchingGuests(query, guests, limit = 8) {
+  const minScore = 45;
+  return guests
+    .map((guest) => ({
+      id: guest.id,
+      name: guest.name,
+      score: scoreGuestNameMatch(query, guest.name)
+    }))
+    .filter((item) => item.score >= minScore)
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "tr", { sensitivity: "base" }))
+    .slice(0, limit);
+}
+
+async function ensureGuestRsvpColumns() {
+  const [cols] = await pool.query("SHOW COLUMNS FROM guests");
+  const names = new Set(cols.map((c) => c.Field));
+  if (!names.has("invite_token")) {
+    await pool.query("ALTER TABLE guests ADD COLUMN invite_token VARCHAR(64) DEFAULT NULL");
+  }
+  if (!names.has("party_size")) {
+    await pool.query("ALTER TABLE guests ADD COLUMN party_size TINYINT UNSIGNED DEFAULT NULL");
+  }
+  if (!names.has("rsvp_note")) {
+    await pool.query("ALTER TABLE guests ADD COLUMN rsvp_note VARCHAR(500) DEFAULT NULL");
+  }
+  if (!names.has("rsvp_at")) {
+    await pool.query("ALTER TABLE guests ADD COLUMN rsvp_at TIMESTAMP NULL DEFAULT NULL");
+  }
+  const [indexes] = await pool.query("SHOW INDEX FROM guests WHERE Key_name = 'idx_guests_invite_token'");
+  if (!indexes.length) {
+    await pool.query("CREATE UNIQUE INDEX idx_guests_invite_token ON guests (invite_token)");
+  }
+}
+
+async function ensureGuestInviteToken(guestId) {
+  const [rows] = await pool.query("SELECT invite_token FROM guests WHERE id = ? LIMIT 1", [guestId]);
+  const guest = rows[0];
+  if (!guest) return null;
+  if (guest.invite_token) return guest.invite_token;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const token = generateInviteToken();
+    try {
+      const [result] = await pool.query("UPDATE guests SET invite_token = ? WHERE id = ? AND invite_token IS NULL", [
+        token,
+        guestId
+      ]);
+      if (result.affectedRows > 0) return token;
+      const [again] = await pool.query("SELECT invite_token FROM guests WHERE id = ? LIMIT 1", [guestId]);
+      if (again[0]?.invite_token) return again[0].invite_token;
+    } catch (err) {
+      if (err.code !== "ER_DUP_ENTRY") throw err;
+    }
+  }
+  return null;
+}
+
 async function ensureGunAkisiTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gun_akisi (
@@ -144,17 +257,34 @@ async function ensureSeedUsers() {
 
 function countStats(rows) {
   const stats = { 1: 0, 2: 0, 3: 0 };
-  for (const row of rows) stats[Number(row.status)] = Number(row.total);
+  for (const row of rows) {
+    stats[Number(row.status)] = Number(row.total);
+  }
   const total = stats[1] + stats[2] + stats[3];
   const occupancy = SALON_CAPACITY > 0 ? Math.min(100, ((stats[1] * 2.5) / SALON_CAPACITY) * 100) : 0;
   return {
     count1: stats[1],
     count2: stats[2],
     count3: stats[3],
+    confirmedPersons: 0,
     totalGuests: total,
     capacity: SALON_CAPACITY,
     occupancyRate: occupancy.toFixed(1)
   };
+}
+
+const GUEST_STATS_SQL = "SELECT status, COUNT(*) AS total FROM guests GROUP BY status";
+const CONFIRMED_PERSONS_SQL =
+  "SELECT COALESCE(SUM(party_size), 0) AS total FROM guests WHERE rsvp_at IS NOT NULL AND party_size IS NOT NULL";
+
+async function fetchGuestStats() {
+  const [countRows, confirmedRows] = await Promise.all([
+    pool.query(GUEST_STATS_SQL),
+    pool.query(CONFIRMED_PERSONS_SQL)
+  ]);
+  const stats = countStats(countRows[0]);
+  stats.confirmedPersons = Number(confirmedRows[0][0]?.total ?? 0);
+  return stats;
 }
 
 async function resolveCurrentUserId(req) {
@@ -233,13 +363,15 @@ app.post("/", requireEditor, async (req, res) => {
 
   try {
     const userId = await resolveCurrentUserId(req);
-    await pool.query("INSERT INTO guests (name, phone, email, city, status, user_id) VALUES (?, ?, ?, ?, ?, ?)", [
+    const inviteToken = generateInviteToken();
+    await pool.query("INSERT INTO guests (name, phone, email, city, status, user_id, invite_token) VALUES (?, ?, ?, ?, ?, ?, ?)", [
       name,
       phone || null,
       email || null,
       city || null,
       status,
-      userId
+      userId,
+      inviteToken
     ]);
     res.redirect("/?ok=1");
   } catch (err) {
@@ -361,16 +493,24 @@ app.get("/list", requireLogin, async (req, res) => {
     const currentUserId = await resolveCurrentUserId(req);
     const viewer = isViewer(req);
     const admin = isAdmin(req);
+    const baseUrl = getPublicBaseUrl(req);
     const guestSql = viewer
-      ? `SELECT g.id, g.name, g.city, g.status, g.user_id, u.username AS kullanici
+      ? `SELECT g.id, g.name, g.city, g.status, g.user_id, g.invite_token, g.party_size, g.rsvp_note, g.rsvp_at, u.username AS kullanici
          FROM guests g
          LEFT JOIN users u ON u.id = g.user_id
          ORDER BY g.name ASC, g.id ASC`
-      : `SELECT g.id, g.name, g.phone, g.email, g.city, g.status, g.user_id, u.username AS kullanici
+      : `SELECT g.id, g.name, g.phone, g.email, g.city, g.status, g.user_id, g.invite_token, g.party_size, g.rsvp_note, g.rsvp_at, u.username AS kullanici
          FROM guests g
          LEFT JOIN users u ON u.id = g.user_id
          ORDER BY g.name ASC, g.id ASC`;
     const [guests] = await pool.query(guestSql);
+    if (!viewer) {
+      for (const guest of guests) {
+        if (!guest.invite_token) {
+          guest.invite_token = await ensureGuestInviteToken(guest.id);
+        }
+      }
+    }
     const [filterUsers] = await pool.query(
       `SELECT u.id, u.username FROM users u
        WHERE u.id IN (SELECT DISTINCT user_id FROM guests WHERE user_id IS NOT NULL)
@@ -385,8 +525,7 @@ app.get("/list", requireLogin, async (req, res) => {
     const [emptyCityRows] = await pool.query(
       "SELECT 1 FROM guests WHERE city IS NULL OR TRIM(city) = '' LIMIT 1"
     );
-    const [countRows] = await pool.query("SELECT status, COUNT(*) AS total FROM guests GROUP BY status");
-    const stats = countStats(countRows);
+    const stats = await fetchGuestStats();
     res.render("list", {
       guests,
       stats,
@@ -397,10 +536,103 @@ app.get("/list", requireLogin, async (req, res) => {
       currentUserId: Number(currentUserId || 0),
       isAdmin: admin,
       username: req.session.user.username,
-      readOnly: viewer
+      readOnly: viewer,
+      baseUrl
     });
   } catch (err) {
     res.status(500).send("Sunucu hatasi: " + err.message);
+  }
+});
+
+app.get("/davet/:token", async (req, res) => {
+  const token = String(req.params.token || "").trim();
+  if (!token) return res.status(404).send("Davet bulunamadi.");
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, name, party_size, rsvp_note, rsvp_at FROM guests WHERE invite_token = ? LIMIT 1",
+      [token]
+    );
+    const guest = rows[0];
+    if (!guest) return res.status(404).send("Davet bulunamadi veya suresi dolmus.");
+    res.render("rsvp", {
+      token,
+      guest,
+      submitted: req.query.ok === "1",
+      error: ""
+    });
+  } catch (err) {
+    res.status(500).send("Sunucu hatasi: " + err.message);
+  }
+});
+
+app.get("/api/rsvp/names", async (req, res) => {
+  const query = String(req.query.q || "").trim();
+  if (query.length < 2) {
+    return res.json({ success: true, matches: [] });
+  }
+  try {
+    const [guests] = await pool.query("SELECT id, name FROM guests ORDER BY name ASC");
+    const matches = findMatchingGuests(query, guests);
+    return res.json({ success: true, matches });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Sunucu hatasi: " + err.message });
+  }
+});
+
+app.post("/api/rsvp/:token", async (req, res) => {
+  const token = String(req.params.token || "").trim();
+  const guestId = Number(req.body.guest_id || 0);
+  const typedName = String(req.body.name || "").trim();
+  const partySize = Number(req.body.party_size || 0);
+  const note = String(req.body.note || "").trim().slice(0, 500);
+
+  if (!token || !guestId || !typedName) {
+    return res.status(422).json({ success: false, message: "Lutfen isminizi secin veya yazin." });
+  }
+  if (!Number.isInteger(partySize) || partySize < 1 || partySize > 5) {
+    return res.status(422).json({ success: false, message: "Kisi sayisi 1 ile 5 arasinda olmalidir." });
+  }
+
+  try {
+    const [tokenRows] = await pool.query("SELECT id, name FROM guests WHERE invite_token = ? LIMIT 1", [token]);
+    const invitedGuest = tokenRows[0];
+    if (!invitedGuest) {
+      return res.status(404).json({ success: false, message: "Davet bulunamadi." });
+    }
+
+    const [selectedRows] = await pool.query("SELECT id, name FROM guests WHERE id = ? LIMIT 1", [guestId]);
+    const selectedGuest = selectedRows[0];
+    if (!selectedGuest) {
+      return res.status(404).json({ success: false, message: "Secilen isim bulunamadi." });
+    }
+
+    const matchScore = scoreGuestNameMatch(typedName, selectedGuest.name);
+    if (matchScore < 45) {
+      return res.status(422).json({ success: false, message: "Yazdiginiz isim secilen kayitla uyusmuyor." });
+    }
+
+    if (Number(invitedGuest.id) !== Number(selectedGuest.id)) {
+      const invitedScore = scoreGuestNameMatch(selectedGuest.name, invitedGuest.name);
+      if (invitedScore < 55) {
+        return res.status(422).json({
+          success: false,
+          message: "Bu davet linki baska bir kisiye ait. Lutfen size gonderilen linki kullanin."
+        });
+      }
+    }
+
+    await pool.query(
+      "UPDATE guests SET name = ?, party_size = ?, rsvp_note = ?, rsvp_at = CURRENT_TIMESTAMP, status = 1 WHERE id = ?",
+      [selectedGuest.name, partySize, note || null, selectedGuest.id]
+    );
+
+    return res.json({
+      success: true,
+      message: "Katiliminiz kaydedildi. Tesekkur ederiz!",
+      guest: { id: selectedGuest.id, name: selectedGuest.name, party_size: partySize }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Sunucu hatasi: " + err.message });
   }
 });
 
@@ -424,17 +656,10 @@ app.post("/api/update", requireEditor, async (req, res) => {
       return res.status(403).json({ success: false, message: "Bu kaydi guncelleme yetkiniz yok." });
     }
     await pool.query("UPDATE guests SET status = ? WHERE id = ?", [status, id]);
-    const [countRows] = await pool.query("SELECT status, COUNT(*) AS total FROM guests GROUP BY status");
-    const stats = countStats(countRows);
+    const stats = await fetchGuestStats();
     return res.json({
       success: true,
-      stats: {
-        count_1: stats.count1,
-        count_2: stats.count2,
-        count_3: stats.count3,
-        total_guests: stats.totalGuests,
-        occupancy_rate: stats.occupancyRate
-      }
+      stats: statsPayload(stats)
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Sunucu hatasi: " + err.message });
@@ -447,7 +672,8 @@ function statsPayload(stats) {
     count_2: stats.count2,
     count_3: stats.count3,
     total_guests: stats.totalGuests,
-    occupancy_rate: stats.occupancyRate
+    occupancy_rate: stats.occupancyRate,
+    confirmed_persons: stats.confirmedPersons
   };
 }
 
@@ -483,8 +709,7 @@ async function handleGuestSave(req, res) {
       ownerId,
       id
     ]);
-    const [countRows] = await pool.query("SELECT status, COUNT(*) AS total FROM guests GROUP BY status");
-    const stats = countStats(countRows);
+    const stats = await fetchGuestStats();
     return res.json({ success: true, stats: statsPayload(stats) });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Sunucu hatasi: " + err.message });
@@ -514,15 +739,14 @@ app.delete("/api/guest/:id", requireEditor, async (req, res) => {
     }
 
     await pool.query("DELETE FROM guests WHERE id = ?", [id]);
-    const [countRows] = await pool.query("SELECT status, COUNT(*) AS total FROM guests GROUP BY status");
-    const stats = countStats(countRows);
+    const stats = await fetchGuestStats();
     return res.json({ success: true, stats: statsPayload(stats) });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Sunucu hatasi: " + err.message });
   }
 });
 
-Promise.all([ensureSeedUsers(), ensureGunAkisiTable()])
+Promise.all([ensureSeedUsers(), ensureGunAkisiTable(), ensureGuestRsvpColumns()])
   .catch((err) => {
     console.error("Baslangic kurulum hatasi:", err.message);
   })
