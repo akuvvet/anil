@@ -72,8 +72,7 @@
                 <span class="inline-block text-xs font-medium px-2 py-1 rounded status-badge status-<%= g.status %>"><%= g.status %> - <%= g.status === 1 ? "Mutlaka" : (g.status === 2 ? "Olabilir" : "Gerek Yok") %></span>
                 <% } else { %>
                 <div class="status-control">
-                  <input type="range" min="1" max="3" step="1" value="<%= g.status %>" class="status-slider status-<%= g.status %>" data-id="<%= g.id %>">
-                  <span class="status-label text-xs text-slate-600 mt-1 inline-block"><%= g.status %> - <span class="status-text"><%= g.status === 1 ? "Mutlaka" : (g.status === 2 ? "Olabilir" : "Gerek Yok") %></span></span>
+                  <button type="button" class="status-btn status-<%= g.status %>" data-id="<%= g.id %>" data-status="<%= g.status %>" aria-label="Status: <%= g.status === 1 ? "Mutlaka" : (g.status === 2 ? "Olabilir" : "Gerek Yok") %>" title="Status degistirmek icin tiklayin"><%= g.status === 1 ? "E" : (g.status === 2 ? "O" : "H") %></button>
                 </div>
                 <% } %>
               </td>
@@ -100,6 +99,7 @@
   const READ_ONLY = <%= readOnly ? 'true' : 'false' %>;
   const GUEST_API = { prefix: '/api/guest' };
   const statusTextMap = {1:'Mutlaka',2:'Olabilir',3:'Gerek Yok'};
+  const statusLetterMap = {1:'E',2:'O',3:'H'};
   const CURRENT_USER_ID = <%= typeof currentUserId !== "undefined" ? Number(currentUserId || 0) : 0 %>;
   const IS_ADMIN = <%= typeof isAdmin !== "undefined" && isAdmin ? "true" : "false" %>;
   let editingRow = null;
@@ -113,7 +113,15 @@
     return tr.dataset.canManage === '1';
   }
 
-  function updateSliderStyle(slider, status){ slider.classList.remove('status-1','status-2','status-3'); slider.classList.add(`status-${status}`); }
+  function updateStatusBtnStyle(btn, status){
+    btn.classList.remove('status-1','status-2','status-3');
+    btn.classList.add(`status-${status}`);
+    btn.dataset.status = String(status);
+    btn.textContent = statusLetterMap[status];
+    btn.setAttribute('aria-label', `Status: ${statusTextMap[status]}`);
+    btn.title = 'Status degistirmek icin tiklayin';
+  }
+  function nextStatus(current){ return current >= 3 ? 1 : current + 1; }
   function updateStats(stats){ document.getElementById('count-1').textContent=stats.count_1; document.getElementById('count-2').textContent=stats.count_2; document.getElementById('count-3').textContent=stats.count_3; document.getElementById('total-guests').textContent=stats.total_guests; document.getElementById('occupancy-rate').textContent=`${stats.occupancy_rate}%`; }
 
   function guestRowNameForSort(tr){
@@ -190,8 +198,7 @@
 
   function statusCellHtml(id, status){
     return `<div class="status-control">
-      <input type="range" min="1" max="3" step="1" value="${status}" class="status-slider status-${status}" data-id="${id}">
-      <span class="status-label text-xs text-slate-600 mt-1 inline-block">${status} - <span class="status-text">${statusTextMap[status]}</span></span>
+      <button type="button" class="status-btn status-${status}" data-id="${id}" data-status="${status}" aria-label="Status: ${statusTextMap[status]}" title="Status degistirmek icin tiklayin">${statusLetterMap[status]}</button>
     </div>`;
   }
   function statusBadgeHtml(status){
@@ -313,36 +320,30 @@
     applyTableFilter();
   }
 
-  async function updateGuestStatus(id,status,slider){
+  async function updateGuestStatus(id, status, btn){
     const res = await fetch('/api/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
     const data = await res.json();
     if(!res.ok || !data.success){ alert(data.message || 'Guncelleme basarisiz'); return; }
-    const wrap = slider.closest('.status-control');
-    wrap.querySelector('.status-label').firstChild.textContent = `${status} - `;
-    wrap.querySelector('.status-text').textContent = statusTextMap[status];
-    const tr = slider.closest('.guest-row');
+    updateStatusBtnStyle(btn, status);
+    const tr = btn.closest('.guest-row');
     if(tr) tr.dataset.status = String(status);
     updateStats(data.stats);
   }
 
   const tableWrap = document.getElementById('tableWrap');
-  if (!READ_ONLY) tableWrap.addEventListener('input', (e)=>{
-    const slider = e.target.closest('.status-slider');
-    if(!slider) return;
-    updateSliderStyle(slider, slider.value);
-  });
-  if (!READ_ONLY) tableWrap.addEventListener('change', (e)=>{
-    const slider = e.target.closest('.status-slider');
-    if(!slider) return;
-    const tr = slider.closest('.guest-row');
+  if (!READ_ONLY) tableWrap.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.status-btn');
+    if(!btn) return;
+    const tr = btn.closest('.guest-row');
     if(tr && !canManageGuestRow(tr)) return;
-    const status = Number(slider.value);
-    const id = Number(slider.dataset.id);
-    updateSliderStyle(slider, status);
-    updateGuestStatus(id, status, slider);
+    const current = Number(btn.dataset.status || 1);
+    const status = nextStatus(current);
+    const id = Number(btn.dataset.id);
+    updateGuestStatus(id, status, btn);
   });
 
   if (!READ_ONLY) tableWrap.addEventListener('click', async (e)=>{
+    if(e.target.closest('.status-btn')) return;
     if(e.target.closest('.guest-inline-save')){
       await saveInlineEdit(e.target.closest('.guest-row'));
       return;

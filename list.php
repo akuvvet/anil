@@ -38,7 +38,7 @@ foreach ($countsRaw as $row) {
     if (isset($counts[$s])) $counts[$s] = (int)$row['total'];
 }
 $totalGuests = array_sum($counts);
-$occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 100) : 0;
+$occupancyRate = $salonCapacity > 0 ? min(100, (($counts[1] * 2.5) / $salonCapacity) * 100) : 0;
 ?>
 <!doctype html>
 <html lang="tr">

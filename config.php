@@ -5,7 +5,7 @@ const DB_HOST = '127.0.0.1';
 const DB_NAME = 'dbwedding';
 const DB_USER = 'root';
 const DB_PASS = '';
-const SALON_CAPACITY = 300;
+const SALON_CAPACITY = 900;
 
 function getPdo(): PDO
 {

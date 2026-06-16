@@ -9,7 +9,7 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
-const SALON_CAPACITY = Number(process.env.SALON_CAPACITY || 300);
+const SALON_CAPACITY = Number(process.env.SALON_CAPACITY || 900);
 const LIMITED_USER_USERNAME = "enis";
 const VIEWER_USERNAME = "izleyici";
 
@@ -146,7 +146,7 @@ function countStats(rows) {
   const stats = { 1: 0, 2: 0, 3: 0 };
   for (const row of rows) stats[Number(row.status)] = Number(row.total);
   const total = stats[1] + stats[2] + stats[3];
-  const occupancy = SALON_CAPACITY > 0 ? Math.min(100, (stats[1] / SALON_CAPACITY) * 100) : 0;
+  const occupancy = SALON_CAPACITY > 0 ? Math.min(100, ((stats[1] * 2.5) / SALON_CAPACITY) * 100) : 0;
   return {
     count1: stats[1],
     count2: stats[2],

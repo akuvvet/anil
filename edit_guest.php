@@ -56,7 +56,7 @@ try {
         if (isset($counts[$key])) $counts[$key] = (int)$row['total'];
     }
     $totalGuests = array_sum($counts);
-    $occupancyRate = $salonCapacity > 0 ? min(100, ($counts[1] / $salonCapacity) * 100) : 0;
+    $occupancyRate = $salonCapacity > 0 ? min(100, (($counts[1] * 2.5) / $salonCapacity) * 100) : 0;
 
     echo json_encode([
         'success' => true,

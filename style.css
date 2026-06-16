@@ -1,47 +1,42 @@
 .status-control {
-    min-width: 90px;
+    min-width: auto;
 }
 
-.status-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 75px;
-    height: 8px;
-    border-radius: 9999px;
-    outline: none;
-    transition: background-color 0.2s ease;
+.status-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 1px solid rgba(15, 23, 42, 0.15);
+    border-radius: 0.25rem;
+    color: #ffffff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
     background-color: #f59e0b;
 }
 
-.status-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #ffffff;
-    border: 2px solid #0f172a;
-    cursor: pointer;
+.status-btn:hover {
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
 }
 
-.status-slider::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #ffffff;
-    border: 2px solid #0f172a;
-    cursor: pointer;
+.status-btn:active {
+    transform: scale(0.96);
 }
 
-.status-slider.status-1 {
+.status-btn.status-1 {
     background-color: #10b981;
 }
 
-.status-slider.status-2 {
+.status-btn.status-2 {
     background-color: #f59e0b;
 }
 
-.status-slider.status-3 {
+.status-btn.status-3 {
     background-color: #ef4444;
 }
 
