@@ -265,6 +265,7 @@ function countStats(rows) {
     count2: stats[2],
     count3: stats[3],
     confirmedPersons: 0,
+    declinedRsvpCount: 0,
     totalGuests: total,
     capacity: SALON_CAPACITY,
     occupancyRate: occupancy.toFixed(1)
@@ -273,15 +274,19 @@ function countStats(rows) {
 
 const GUEST_STATS_SQL = "SELECT status, COUNT(*) AS total FROM guests GROUP BY status";
 const CONFIRMED_PERSONS_SQL =
-  "SELECT COALESCE(SUM(party_size), 0) AS total FROM guests WHERE rsvp_at IS NOT NULL AND party_size IS NOT NULL";
+  "SELECT COALESCE(SUM(party_size), 0) AS total FROM guests WHERE rsvp_at IS NOT NULL AND party_size > 0";
+const DECLINED_RSVP_SQL =
+  "SELECT COUNT(*) AS total FROM guests WHERE rsvp_at IS NOT NULL AND party_size = 0";
 
 async function fetchGuestStats() {
-  const [countRows, confirmedRows] = await Promise.all([
+  const [countRows, confirmedRows, declinedRows] = await Promise.all([
     pool.query(GUEST_STATS_SQL),
-    pool.query(CONFIRMED_PERSONS_SQL)
+    pool.query(CONFIRMED_PERSONS_SQL),
+    pool.query(DECLINED_RSVP_SQL)
   ]);
   const stats = countStats(countRows[0]);
   stats.confirmedPersons = Number(confirmedRows[0][0]?.total ?? 0);
+  stats.declinedRsvpCount = Number(declinedRows[0][0]?.total ?? 0);
   return stats;
 }
 
@@ -581,13 +586,12 @@ app.get("/api/rsvp/names", async (req, res) => {
 app.post("/api/rsvp/:token", async (req, res) => {
   const token = String(req.params.token || "").trim();
   const guestId = Number(req.body.guest_id || 0);
-  const typedName = String(req.body.name || "").trim();
   const notAttending = req.body.not_attending === true || req.body.not_attending === "true";
   const partySize = Number(req.body.party_size ?? (notAttending ? 0 : 1));
   const note = String(req.body.note || "").trim().slice(0, 500);
 
-  if (!token || !guestId || !typedName) {
-    return res.status(422).json({ success: false, message: "Lutfen isminizi secin veya yazin." });
+  if (!token) {
+    return res.status(422).json({ success: false, message: "Gecersiz davet." });
   }
   if (notAttending) {
     if (!Number.isInteger(partySize) || partySize !== 0) {
@@ -599,30 +603,12 @@ app.post("/api/rsvp/:token", async (req, res) => {
 
   try {
     const [tokenRows] = await pool.query("SELECT id, name FROM guests WHERE invite_token = ? LIMIT 1", [token]);
-    const invitedGuest = tokenRows[0];
-    if (!invitedGuest) {
+    const selectedGuest = tokenRows[0];
+    if (!selectedGuest) {
       return res.status(404).json({ success: false, message: "Davet bulunamadi." });
     }
-
-    const [selectedRows] = await pool.query("SELECT id, name FROM guests WHERE id = ? LIMIT 1", [guestId]);
-    const selectedGuest = selectedRows[0];
-    if (!selectedGuest) {
-      return res.status(404).json({ success: false, message: "Secilen isim bulunamadi." });
-    }
-
-    const matchScore = scoreGuestNameMatch(typedName, selectedGuest.name);
-    if (matchScore < 45) {
-      return res.status(422).json({ success: false, message: "Yazdiginiz isim secilen kayitla uyusmuyor." });
-    }
-
-    if (Number(invitedGuest.id) !== Number(selectedGuest.id)) {
-      const invitedScore = scoreGuestNameMatch(selectedGuest.name, invitedGuest.name);
-      if (invitedScore < 55) {
-        return res.status(422).json({
-          success: false,
-          message: "Bu davet linki baska bir kisiye ait. Lutfen size gonderilen linki kullanin."
-        });
-      }
+    if (guestId && Number(selectedGuest.id) !== guestId) {
+      return res.status(422).json({ success: false, message: "Gecersiz davet kaydi." });
     }
 
     await pool.query(
@@ -688,7 +674,8 @@ function statsPayload(stats) {
     count_3: stats.count3,
     total_guests: stats.totalGuests,
     occupancy_rate: stats.occupancyRate,
-    confirmed_persons: stats.confirmedPersons
+    confirmed_persons: stats.confirmedPersons,
+    declined_rsvp_count: stats.declinedRsvpCount
   };
 }
 

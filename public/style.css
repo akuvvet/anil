@@ -314,6 +314,27 @@ tr.guest-row-editing {
     font-variant-numeric: tabular-nums;
 }
 
+tr.guest-row-rsvp-declined {
+    background-color: #fff1f2;
+}
+
+tr.guest-row-rsvp-declined:hover {
+    background-color: #ffe4e6;
+}
+
+.party-size-declined {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.35rem;
+    background: #fee2e2;
+    color: #be123c;
+    font-weight: 700;
+    font-size: 0.8125rem;
+}
+
 .guest-table-pagination {
     display: flex;
     flex-wrap: wrap;

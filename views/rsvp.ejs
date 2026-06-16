@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dugun Davetiyesi - LCV</title>
+  <title>Zeynep & Enis - LCV</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -12,7 +12,8 @@
     <section class="rsvp-card bg-white rounded-3xl shadow-xl border border-rose-100 overflow-hidden">
       <div class="rsvp-header px-6 py-8 text-center text-white">
         <p class="text-sm uppercase tracking-widest opacity-90">Ozel Davetiye</p>
-        <h1 class="text-2xl sm:text-3xl font-semibold mt-2">Katilim Bildirimi</h1>
+        <h1 class="text-2xl sm:text-3xl font-semibold mt-2">Zeynep &amp; Enis</h1>
+        <p class="mt-2 text-lg font-medium opacity-95">16.01.2027</p>
         <p class="mt-3 text-sm opacity-90">Lutfen asagidaki formu doldurarak bize haber verin.</p>
       </div>
 
@@ -27,31 +28,11 @@
         <div id="rsvpSuccess" class="hidden rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 text-sm"></div>
 
         <form id="rsvpForm" class="space-y-5" novalidate>
-          <div>
-            <label for="guestName" class="block text-sm font-medium text-slate-700 mb-1.5">Adiniz Soyadiniz</label>
-            <input
-              type="text"
-              id="guestName"
-              name="name"
-              class="rsvp-input w-full"
-              placeholder="Isminizi yazin..."
-              value="<%= guest.name || '' %>"
-              autocomplete="name"
-              required
-            >
-            <p class="mt-1.5 text-xs text-slate-500">Yazdiginiz isim listedeki kayitlarla karsilastirilir.</p>
-          </div>
-
-          <div id="matchPanel" class="hidden">
-            <p class="text-sm font-medium text-slate-700 mb-2">Size yakin isimler</p>
-            <div id="matchList" class="space-y-2"></div>
-          </div>
-
           <input type="hidden" id="guestId" name="guest_id" value="<%= guest.id %>">
 
-          <div id="selectedGuest" class="hidden rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3">
-            <p class="text-xs uppercase tracking-wide text-indigo-600 font-medium">Secilen kayit</p>
-            <p id="selectedGuestName" class="text-base font-semibold text-indigo-900 mt-1"></p>
+          <div class="rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3">
+            <p class="text-xs uppercase tracking-wide text-indigo-600 font-medium">Davetli</p>
+            <p id="selectedGuestName" class="text-base font-semibold text-indigo-900 mt-1"><%= guest.name %></p>
           </div>
 
           <div id="declineWrap" class="rsvp-decline-wrap">
@@ -105,19 +86,13 @@
   const TOKEN = <%- JSON.stringify(token) %>;
   const INITIAL_GUEST = <%- JSON.stringify({ id: guest.id, name: guest.name, status: guest.status, party_size: guest.party_size }) %>;
   const MAX_PARTY_SIZE = 5;
-  const nameInput = document.getElementById('guestName');
   const guestIdInput = document.getElementById('guestId');
   const notAttendingInput = document.getElementById('notAttending');
   const partySizeSelect = document.getElementById('partySize');
-  const matchPanel = document.getElementById('matchPanel');
-  const matchList = document.getElementById('matchList');
-  const selectedGuest = document.getElementById('selectedGuest');
   const selectedGuestName = document.getElementById('selectedGuestName');
   const rsvpForm = document.getElementById('rsvpForm');
   const rsvpError = document.getElementById('rsvpError');
   const rsvpSuccess = document.getElementById('rsvpSuccess');
-  let searchTimer = null;
-  let selectedMatch = INITIAL_GUEST;
   let savedPartySize = Math.min(Math.max(Number(INITIAL_GUEST.party_size || 1), 1), MAX_PARTY_SIZE);
 
   function buildPartySizeOptions(selectedValue) {
@@ -172,60 +147,6 @@
     rsvpSuccess.classList.add('hidden');
   }
 
-  function selectGuest(match) {
-    selectedMatch = match;
-    guestIdInput.value = String(match.id);
-    selectedGuestName.textContent = match.name;
-    selectedGuest.classList.remove('hidden');
-    matchPanel.classList.add('hidden');
-  }
-
-  function renderMatches(matches) {
-    matchList.replaceChildren();
-    if (!matches.length) {
-      matchPanel.classList.add('hidden');
-      return;
-    }
-    matches.forEach((match) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'rsvp-match-btn w-full text-left';
-      btn.innerHTML = `<span class="font-medium">${match.name}</span><span class="text-xs text-slate-500 ml-2">Eslesme</span>`;
-      btn.addEventListener('click', () => {
-        nameInput.value = match.name;
-        selectGuest(match);
-      });
-      matchList.appendChild(btn);
-    });
-    matchPanel.classList.remove('hidden');
-  }
-
-  async function searchNames(query) {
-    const q = query.trim();
-    if (q.length < 2) {
-      matchPanel.classList.add('hidden');
-      return;
-    }
-    const res = await fetch(`/api/rsvp/names?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-    if (!res.ok || !data.success) return;
-    renderMatches(data.matches || []);
-    const exact = (data.matches || []).find((m) => m.name.toLocaleLowerCase('tr') === q.toLocaleLowerCase('tr'));
-    if (exact) selectGuest(exact);
-  }
-
-  nameInput.addEventListener('input', () => {
-    clearMessages();
-    selectedGuest.classList.add('hidden');
-    guestIdInput.value = '';
-    selectedMatch = null;
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => searchNames(nameInput.value), 280);
-  });
-
-  if (INITIAL_GUEST.name) {
-    selectGuest(INITIAL_GUEST);
-  }
   if (Number(INITIAL_GUEST.status) === 3) {
     setDeclineMode(true);
   } else {
@@ -240,21 +161,10 @@
   rsvpForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearMessages();
-    const name = nameInput.value.trim();
-    const guestId = Number(guestIdInput.value || 0);
+    const guestId = Number(guestIdInput.value || INITIAL_GUEST.id);
     const decline = isDeclineMode();
     const partySize = decline ? 0 : Number(partySizeSelect.value || 0);
     const note = document.getElementById('rsvpNote').value.trim();
-    if (!name) {
-      showError('Lutfen isminizi yazin.');
-      nameInput.focus();
-      return;
-    }
-    if (!guestId) {
-      showError('Lutfen listeden size uygun ismi secin.');
-      nameInput.focus();
-      return;
-    }
     const submitBtn = document.getElementById('rsvpSubmit');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Kaydediliyor...';
@@ -262,7 +172,13 @@
       const res = await fetch(`/api/rsvp/${TOKEN}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guest_id: guestId, name, party_size: partySize, not_attending: decline, note })
+        body: JSON.stringify({
+          guest_id: guestId,
+          name: INITIAL_GUEST.name,
+          party_size: partySize,
+          not_attending: decline,
+          note
+        })
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -270,14 +186,12 @@
         return;
       }
       showSuccess(data.message || (decline ? 'Katilamayacaginiz kaydedildi.' : 'Katiliminiz kaydedildi.'));
-      if (data.guest) {
-        selectGuest(data.guest);
-        if (Number(data.guest.status) === 3 || Number(data.guest.party_size) === 0) {
-          setDeclineMode(true);
-        } else {
-          savedPartySize = Number(data.guest.party_size || 1);
-          setDeclineMode(false);
-        }
+      if (data.guest?.name) selectedGuestName.textContent = data.guest.name;
+      if (Number(data.guest?.status) === 3 || Number(data.guest?.party_size) === 0) {
+        setDeclineMode(true);
+      } else if (data.guest) {
+        savedPartySize = Number(data.guest.party_size || 1);
+        setDeclineMode(false);
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {

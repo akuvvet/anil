@@ -21,6 +21,8 @@
         <p class="text-3xl font-bold" id="count-1"><%= stats.count1 %></p>
         <p class="text-sm mt-2 text-emerald-100">Onaylanmis kisi</p>
         <p class="text-2xl font-bold" id="confirmed-persons"><%= Number(stats.confirmedPersons || 0) %></p>
+        <p class="text-xs mt-2 text-emerald-100">LCV katilmayan (0 kisi)</p>
+        <p class="text-lg font-bold" id="declined-rsvp-count"><%= Number(stats.declinedRsvpCount || 0) %></p>
       </div>
       <div class="rounded-xl bg-amber-500 text-white p-4"><p class="text-sm">Belirsizler (2)</p><p class="text-3xl font-bold" id="count-2"><%= stats.count2 %></p></div>
       <div class="rounded-xl bg-rose-600 text-white p-4"><p class="text-sm">Elenenler / Yedekler (3)</p><p class="text-3xl font-bold" id="count-3"><%= stats.count3 %></p></div>
@@ -67,7 +69,8 @@
               const canManage = isAdmin || ownsGuest;
               const canSeeContact = isAdmin || ownsGuest;
             %>
-            <tr class="border-t guest-row" data-id="<%= g.id %>" data-name="<%= g.name %>"<% if (canSeeContact) { %> data-phone="<%= g.phone || "" %>" data-email="<%= g.email || "" %>"<% } %> data-city="<%= g.city || "" %>" data-status="<%= g.status %>" data-user-id="<%= g.user_id == null ? "" : g.user_id %>" data-can-manage="<%= canManage ? "1" : "0" %>">
+            <% const partySizeVal = g.party_size; const hasRsvp = !!g.rsvp_at; const isRsvpDeclined = hasRsvp && Number(partySizeVal) === 0; %>
+            <tr class="border-t guest-row<%= isRsvpDeclined ? ' guest-row-rsvp-declined' : '' %>" data-id="<%= g.id %>" data-name="<%= g.name %>"<% if (canSeeContact) { %> data-phone="<%= g.phone || "" %>" data-email="<%= g.email || "" %>"<% } %> data-city="<%= g.city || "" %>" data-status="<%= g.status %>" data-user-id="<%= g.user_id == null ? "" : g.user_id %>" data-can-manage="<%= canManage ? "1" : "0" %>" data-party-size="<%= partySizeVal != null ? partySizeVal : "" %>" data-rsvp="<%= hasRsvp ? "1" : "0" %>">
               <td class="px-4 py-3 font-medium guest-cell-name"><%= g.name %></td>
               <% if (!readOnly) { %><td class="px-4 py-3 guest-cell-phone text-slate-500"><%= canSeeContact ? (g.phone || "") : "—" %></td><td class="px-4 py-3 guest-cell-email text-slate-500" title="<%= canSeeContact ? (g.email || "") : "" %>"><%= canSeeContact ? (g.email || "") : "—" %></td><% } %>
               <td class="px-4 py-3 guest-cell-city"><%= g.city || "" %></td>
@@ -80,7 +83,15 @@
                 </div>
                 <% } %>
               </td>
-              <td class="px-4 py-3 guest-cell-party text-slate-700 whitespace-nowrap"><%= g.party_size ? g.party_size : "—" %></td>
+              <td class="px-4 py-3 guest-cell-party text-slate-700 whitespace-nowrap">
+                <% if (partySizeVal != null && partySizeVal !== '') { %>
+                  <% if (isRsvpDeclined) { %>
+                  <span class="party-size-declined" title="LCV: Katilamiyor">0</span>
+                  <% } else { %>
+                  <%= partySizeVal %>
+                  <% } %>
+                <% } else { %>—<% } %>
+              </td>
               <td class="px-4 py-3 guest-cell-rsvp-note text-slate-600 max-w-[12rem] truncate" title="<%= g.rsvp_note || "" %>"><%= g.rsvp_note || "—" %></td>
               <td class="px-4 py-3 guest-cell-invite align-top">
                 <% if (g.invite_token) { %>
@@ -143,7 +154,7 @@
     btn.title = 'Status degistirmek icin tiklayin';
   }
   function nextStatus(current){ return current >= 3 ? 1 : current + 1; }
-  function updateStats(stats){ document.getElementById('count-1').textContent=stats.count_1; document.getElementById('count-2').textContent=stats.count_2; document.getElementById('count-3').textContent=stats.count_3; document.getElementById('total-guests').textContent=stats.total_guests; document.getElementById('occupancy-rate').textContent=`${stats.occupancy_rate}%`; const cp=document.getElementById('confirmed-persons'); if(cp) cp.textContent=String(stats.confirmed_persons ?? 0); }
+  function updateStats(stats){ document.getElementById('count-1').textContent=stats.count_1; document.getElementById('count-2').textContent=stats.count_2; document.getElementById('count-3').textContent=stats.count_3; document.getElementById('total-guests').textContent=stats.total_guests; document.getElementById('occupancy-rate').textContent=`${stats.occupancy_rate}%`; const cp=document.getElementById('confirmed-persons'); if(cp) cp.textContent=String(stats.confirmed_persons ?? 0); const dr=document.getElementById('declined-rsvp-count'); if(dr) dr.textContent=String(stats.declined_rsvp_count ?? 0); }
 
   function guestRowNameForSort(tr){
     const cell = tr.querySelector('.guest-cell-name');
