@@ -213,6 +213,39 @@ tr.guest-row-editing {
     background: linear-gradient(135deg, #e11d48 0%, #7c3aed 100%);
 }
 
+.rsvp-lang-switch {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+}
+
+.rsvp-lang-btn {
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.35rem;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.rsvp-lang-btn:hover {
+    color: #ffffff;
+}
+
+.rsvp-lang-btn.is-active {
+    color: #ffffff;
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.rsvp-lang-sep {
+    color: rgba(255, 255, 255, 0.45);
+    user-select: none;
+}
+
 .rsvp-card {
     box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
 }

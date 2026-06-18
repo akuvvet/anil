@@ -1,26 +1,31 @@
 <!doctype html>
-<html lang="tr">
+<html lang="<%= locale %>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Zeynep & Enis - LCV</title>
+  <title><%= t('meta.title') %></title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50">
   <main class="max-w-lg mx-auto p-4 sm:p-8">
     <section class="rsvp-card bg-white rounded-3xl shadow-xl border border-rose-100 overflow-hidden">
-      <div class="rsvp-header px-6 py-8 text-center text-white">
-        <p class="text-sm uppercase tracking-widest opacity-90">Özel DÜGÜN DAVETIYESI</p>
+      <div class="rsvp-header px-6 py-8 text-center text-white relative">
+        <nav class="rsvp-lang-switch" aria-label="Language">
+          <a href="/davet/<%= token %>?lang=tr<%= submitted ? '&ok=1' : '' %>" class="rsvp-lang-btn<%= locale === 'tr' ? ' is-active' : '' %>"><%= t('lang.tr') %></a>
+          <span class="rsvp-lang-sep" aria-hidden="true">|</span>
+          <a href="/davet/<%= token %>?lang=de<%= submitted ? '&ok=1' : '' %>" class="rsvp-lang-btn<%= locale === 'de' ? ' is-active' : '' %>"><%= t('lang.de') %></a>
+        </nav>
+        <p class="text-sm uppercase tracking-widest opacity-90"><%= t('rsvp.headerBadge') %></p>
         <h1 class="text-2xl sm:text-3xl font-semibold mt-2">Zeynep &amp; Enis</h1>
         <p class="mt-2 text-lg font-medium opacity-95">16.01.2027</p>
-        <p class="mt-3 text-sm opacity-90">Lutfen asagidaki formu doldurarak bize haber verin.</p>
+        <p class="mt-3 text-sm opacity-90"><%= t('rsvp.intro') %></p>
       </div>
 
       <div class="px-6 py-6 space-y-5">
         <% if (submitted) { %>
         <div class="rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 text-sm">
-          Katiliminiz basariyla kaydedildi. Tesekkur ederiz!
+          <%= t('rsvp.successPage') %>
         </div>
         <% } %>
 
@@ -29,12 +34,12 @@
 
         <div id="calendarSuggest" class="<%= showCalendar ? '' : 'hidden' %> rsvp-calendar-suggest rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-4 space-y-3">
           <div>
-            <p class="text-sm font-semibold text-indigo-900">Takviminize ekleyin</p>
+            <p class="text-sm font-semibold text-indigo-900"><%= t('rsvp.calendarTitle') %></p>
             <p class="text-xs text-indigo-700 mt-1"><%= calendar.title %> · 16.01.2027 · 16:00 – 23:00</p>
           </div>
           <div class="rsvp-calendar-actions">
-            <a id="googleCalendarBtn" class="rsvp-calendar-btn" href="#" target="_blank" rel="noopener noreferrer">Google Takvim</a>
-            <a class="rsvp-calendar-btn rsvp-calendar-btn-secondary" href="/davet/<%= token %>/takvim.ics">Takvime indir (.ics)</a>
+            <a id="googleCalendarBtn" class="rsvp-calendar-btn" href="#" target="_blank" rel="noopener noreferrer"><%= t('rsvp.googleCalendar') %></a>
+            <a class="rsvp-calendar-btn rsvp-calendar-btn-secondary" href="/davet/<%= token %>/takvim.ics"><%= t('rsvp.downloadIcs') %></a>
           </div>
         </div>
 
@@ -42,7 +47,7 @@
           <input type="hidden" id="guestId" name="guest_id" value="<%= guest.id %>">
 
           <div class="rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3">
-            <p class="text-xs uppercase tracking-wide text-indigo-600 font-medium">Davetli</p>
+            <p class="text-xs uppercase tracking-wide text-indigo-600 font-medium"><%= t('rsvp.guestLabel') %></p>
             <p id="selectedGuestName" class="text-base font-semibold text-indigo-900 mt-1"><%= guest.name %></p>
           </div>
 
@@ -56,37 +61,37 @@
                 <%= Number(guest.status) === 3 ? "checked" : "" %>
               >
               <span class="text-sm text-slate-700">
-                <span class="font-semibold text-rose-900">Davet'e katilamayacagim</span>
-                <span class="block text-xs text-rose-700/80 mt-0.5">Isaretlerseniz kisi sayisi 0 olur ve katilamayacaginiz kaydedilir.</span>
+                <span class="font-semibold text-rose-900"><%= t('rsvp.declineTitle') %></span>
+                <span class="block text-xs text-rose-700/80 mt-0.5"><%= t('rsvp.declineHint') %></span>
               </span>
             </label>
           </div>
 
           <div id="partySizeWrap">
-            <label for="partySize" class="block text-sm font-medium text-slate-700 mb-1.5">Toplam kac kisi ile geleceksiniz?</label>
+            <label for="partySize" class="block text-sm font-medium text-slate-700 mb-1.5"><%= t('rsvp.partySizeLabel') %></label>
             <select id="partySize" name="party_size" class="rsvp-input w-full" required></select>
-            <p class="mt-1.5 text-xs text-slate-500">Kendiniz dahil toplam kisi sayisini secin.</p>
+            <p class="mt-1.5 text-xs text-slate-500"><%= t('rsvp.partySizeHint') %></p>
           </div>
 
           <div>
-            <label for="rsvpNote" class="block text-sm font-medium text-slate-700 mb-1.5">Kisa not (istege bagli)</label>
+            <label for="rsvpNote" class="block text-sm font-medium text-slate-700 mb-1.5"><%= t('rsvp.noteLabel') %></label>
             <textarea
               id="rsvpNote"
               name="note"
               class="rsvp-input w-full min-h-[5rem] resize-y"
               maxlength="500"
-              placeholder="Ornegin: Vejetaryen menu, cocuklarla geliyoruz..."
+              placeholder="<%= t('rsvp.notePlaceholder') %>"
             ><%= guest.rsvp_note || '' %></textarea>
           </div>
 
           <button type="submit" id="rsvpSubmit" class="rsvp-submit w-full">
-            Katilimimi Bildir
+            <%= t('rsvp.submit') %>
           </button>
         </form>
 
         <% if (guest.rsvp_at) { %>
         <p class="text-xs text-center text-slate-400 pt-2">
-          Son guncelleme: <%= new Date(guest.rsvp_at).toLocaleString('tr-TR') %>
+          <%= t('rsvp.lastUpdate') %> <%= new Date(guest.rsvp_at).toLocaleString(dateLocale) %>
         </p>
         <% } %>
       </div>
@@ -98,6 +103,7 @@
   const INITIAL_GUEST = <%- JSON.stringify({ id: guest.id, name: guest.name, status: guest.status, party_size: guest.party_size }) %>;
   const WEDDING_CALENDAR = <%- JSON.stringify(calendar) %>;
   const SHOW_CALENDAR_INIT = <%= showCalendar ? 'true' : 'false' %>;
+  const I18N = <%- JSON.stringify(i18n.rsvp) %>;
   const MAX_PARTY_SIZE = 5;
   const guestIdInput = document.getElementById('guestId');
   const notAttendingInput = document.getElementById('notAttending');
@@ -109,6 +115,10 @@
   const calendarSuggest = document.getElementById('calendarSuggest');
   const googleCalendarBtn = document.getElementById('googleCalendarBtn');
   let savedPartySize = Math.min(Math.max(Number(INITIAL_GUEST.party_size || 1), 1), MAX_PARTY_SIZE);
+
+  function personCountLabel(n) {
+    return I18N.personCount.replace('{{n}}', String(n));
+  }
 
   function googleCalendarUrl() {
     const params = new URLSearchParams({
@@ -134,7 +144,7 @@
     for (let i = 1; i <= MAX_PARTY_SIZE; i += 1) {
       const opt = document.createElement('option');
       opt.value = String(i);
-      opt.textContent = `${i} kisi`;
+      opt.textContent = personCountLabel(i);
       if (i === selectedValue) opt.selected = true;
       partySizeSelect.appendChild(opt);
     }
@@ -149,7 +159,7 @@
       partySizeSelect.replaceChildren();
       const opt = document.createElement('option');
       opt.value = '0';
-      opt.textContent = '0 kisi';
+      opt.textContent = I18N.personCountZero;
       opt.selected = true;
       partySizeSelect.appendChild(opt);
       partySizeSelect.disabled = true;
@@ -208,7 +218,7 @@
     const note = document.getElementById('rsvpNote').value.trim();
     const submitBtn = document.getElementById('rsvpSubmit');
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Kaydediliyor...';
+    submitBtn.textContent = I18N.saving;
     try {
       const res = await fetch(`/api/rsvp/${TOKEN}`, {
         method: 'POST',
@@ -223,10 +233,10 @@
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        showError(data.message || 'Kayit basarisiz oldu.');
+        showError(data.message || I18N.saveFailed);
         return;
       }
-      showSuccess(data.message || (decline ? 'Katilamayacaginiz kaydedildi.' : 'Katiliminiz kaydedildi.'));
+      showSuccess(data.message || (decline ? I18N.declineSaved : I18N.attendanceSaved));
       if (data.guest?.name) selectedGuestName.textContent = data.guest.name;
       if (Number(data.guest?.status) === 3 || Number(data.guest?.party_size) === 0) {
         setDeclineMode(true);
@@ -238,10 +248,10 @@
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      showError('Baglanti hatasi. Lutfen tekrar deneyin.');
+      showError(I18N.connectionError);
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Katilimimi Bildir';
+      submitBtn.textContent = I18N.submit;
     }
   });
   </script>

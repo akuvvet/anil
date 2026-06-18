@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "title": "Zeynep & Enis - LCV",
+    "lang": "tr"
+  },
+  "rsvp": {
+    "headerBadge": "Özel DÜGÜN DAVETIYESI",
+    "intro": "Lutfen asagidaki formu doldurarak bize haber verin.",
+    "successPage": "Katiliminiz basariyla kaydedildi. Tesekkur ederiz!",
+    "calendarTitle": "Takviminize ekleyin",
+    "googleCalendar": "Google Takvim",
+    "downloadIcs": "Takvime indir (.ics)",
+    "guestLabel": "Davetli",
+    "declineTitle": "Davet'e katilamayacagim",
+    "declineHint": "Isaretlerseniz kisi sayisi 0 olur ve katilamayacaginiz kaydedilir.",
+    "partySizeLabel": "Toplam kac kisi ile geleceksiniz?",
+    "partySizeHint": "Kendiniz dahil toplam kisi sayisini secin.",
+    "noteLabel": "Kisa not (istege bagli)",
+    "notePlaceholder": "Ornegin: Vejetaryen menu, cocuklarla geliyoruz...",
+    "submit": "Katilimimi Bildir",
+    "lastUpdate": "Son guncelleme:",
+    "personCount": "{{n}} kisi",
+    "personCountZero": "0 kisi",
+    "saving": "Kaydediliyor...",
+    "saveFailed": "Kayit basarisiz oldu.",
+    "connectionError": "Baglanti hatasi. Lutfen tekrar deneyin.",
+    "declineSaved": "Katilamayacaginiz kaydedildi.",
+    "attendanceSaved": "Katiliminiz kaydedildi."
+  },
+  "calendar": {
+    "title": "Zeynep ve Enis'in dügünü",
+    "description": "Zeynep ve Enis dugunu - 16:00 - 23:00",
+    "icsFilename": "zeynep-enis-dugunu.ics"
+  },
+  "api": {
+    "invalidInvite": "Gecersiz davet.",
+    "invalidAttendance": "Gecersiz katilim bilgisi.",
+    "partySizeRange": "Kisi sayisi 1 ile 5 arasinda olmalidir.",
+    "inviteNotFound": "Davet bulunamadi.",
+    "invalidGuestRecord": "Gecersiz davet kaydi.",
+    "declineSuccess": "Katilamayacaginiz kaydedildi. Tesekkur ederiz.",
+    "attendanceSuccess": "Katiliminiz kaydedildi. Tesekkur ederiz!",
+    "serverError": "Sunucu hatasi: {{msg}}"
+  },
+  "errors": {
+    "inviteNotFound": "Davet bulunamadi.",
+    "inviteExpired": "Davet bulunamadi veya suresi dolmus."
+  },
+  "lang": {
+    "tr": "Türkçe",
+    "de": "Deutsch"
+  }
+}

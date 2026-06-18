@@ -5,6 +5,7 @@ const session = require("express-session");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
 const { pool } = require("./db");
+const { guestLocaleMiddleware, getWeddingCalendar, localeDateTimeFormat } = require("./i18n");
 
 dotenv.config();
 
@@ -111,14 +112,6 @@ function getPublicBaseUrl(req) {
   return `${req.protocol}://${req.get("host")}`;
 }
 
-const WEDDING_CALENDAR = {
-  title: "Zeynep ve Enis'in dügünü",
-  date: "20270116",
-  start: "160000",
-  end: "230000",
-  timezone: "Europe/Istanbul"
-};
-
 function escapeIcsText(value) {
   return String(value || "")
     .replace(/\\/g, "\\\\")
@@ -127,14 +120,16 @@ function escapeIcsText(value) {
     .replace(/\n/g, "\\n");
 }
 
-function buildWeddingIcs() {
-  const { title, date, start, end, timezone } = WEDDING_CALENDAR;
+function buildWeddingIcs(locale = "tr") {
+  const calendar = getWeddingCalendar(locale);
+  const { title, description, date, start, end, timezone } = calendar;
   const uid = `wedding-${date}@davetiye`;
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  const prodLang = locale === "de" ? "DE" : "TR";
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Davetiye//Wedding//TR",
+    `PRODID:-//Davetiye//Wedding//${prodLang}`,
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
@@ -143,7 +138,7 @@ function buildWeddingIcs() {
     `DTSTART;TZID=${timezone}:${date}T${start}`,
     `DTEND;TZID=${timezone}:${date}T${end}`,
     `SUMMARY:${escapeIcsText(title)}`,
-    `DESCRIPTION:${escapeIcsText("Zeynep ve Enis dugunu - 16:00 - 23:00")}`,
+    `DESCRIPTION:${escapeIcsText(description)}`,
     "END:VEVENT",
     "END:VCALENDAR",
     ""
@@ -591,42 +586,45 @@ app.get("/list", requireLogin, async (req, res) => {
   }
 });
 
-app.get("/davet/:token", async (req, res) => {
+app.get("/davet/:token", guestLocaleMiddleware, async (req, res) => {
   const token = String(req.params.token || "").trim();
-  if (!token) return res.status(404).send("Davet bulunamadi.");
+  if (!token) return res.status(404).send(req.t("errors.inviteNotFound"));
   try {
     const [rows] = await pool.query(
       "SELECT id, name, party_size, rsvp_note, rsvp_at, status FROM guests WHERE invite_token = ? LIMIT 1",
       [token]
     );
     const guest = rows[0];
-    if (!guest) return res.status(404).send("Davet bulunamadi veya suresi dolmus.");
+    if (!guest) return res.status(404).send(req.t("errors.inviteExpired"));
     res.set("Cache-Control", "no-store");
     res.render("rsvp", {
       token,
       guest,
       submitted: req.query.ok === "1",
       error: "",
-      calendar: WEDDING_CALENDAR,
-      showCalendar: Number(guest.status) === 1 && !!guest.rsvp_at && Number(guest.party_size || 0) > 0
+      calendar: getWeddingCalendar(req.locale),
+      showCalendar: Number(guest.status) === 1 && !!guest.rsvp_at && Number(guest.party_size || 0) > 0,
+      locale: req.locale,
+      dateLocale: localeDateTimeFormat(req.locale)
     });
   } catch (err) {
-    res.status(500).send("Sunucu hatasi: " + err.message);
+    res.status(500).send(req.t("api.serverError", { msg: err.message }));
   }
 });
 
-app.get("/davet/:token/takvim.ics", async (req, res) => {
+app.get("/davet/:token/takvim.ics", guestLocaleMiddleware, async (req, res) => {
   const token = String(req.params.token || "").trim();
-  if (!token) return res.status(404).send("Davet bulunamadi.");
+  if (!token) return res.status(404).send(req.t("errors.inviteNotFound"));
   try {
     const [rows] = await pool.query("SELECT id FROM guests WHERE invite_token = ? LIMIT 1", [token]);
-    if (!rows[0]) return res.status(404).send("Davet bulunamadi.");
+    if (!rows[0]) return res.status(404).send(req.t("errors.inviteNotFound"));
+    const calendar = getWeddingCalendar(req.locale);
     res.set("Cache-Control", "no-store");
     res.set("Content-Type", "text/calendar; charset=utf-8");
-    res.set("Content-Disposition", 'attachment; filename="zeynep-enis-dugunu.ics"');
-    return res.send(buildWeddingIcs());
+    res.set("Content-Disposition", `attachment; filename="${calendar.icsFilename}"`);
+    return res.send(buildWeddingIcs(req.locale));
   } catch (err) {
-    return res.status(500).send("Sunucu hatasi: " + err.message);
+    return res.status(500).send(req.t("api.serverError", { msg: err.message }));
   }
 });
 
@@ -644,7 +642,7 @@ app.get("/api/rsvp/names", async (req, res) => {
   }
 });
 
-app.post("/api/rsvp/:token", async (req, res) => {
+app.post("/api/rsvp/:token", guestLocaleMiddleware, async (req, res) => {
   const token = String(req.params.token || "").trim();
   const guestId = Number(req.body.guest_id || 0);
   const notAttending = req.body.not_attending === true || req.body.not_attending === "true";
@@ -652,24 +650,24 @@ app.post("/api/rsvp/:token", async (req, res) => {
   const note = String(req.body.note || "").trim().slice(0, 500);
 
   if (!token) {
-    return res.status(422).json({ success: false, message: "Gecersiz davet." });
+    return res.status(422).json({ success: false, message: req.t("api.invalidInvite") });
   }
   if (notAttending) {
     if (!Number.isInteger(partySize) || partySize !== 0) {
-      return res.status(422).json({ success: false, message: "Gecersiz katilim bilgisi." });
+      return res.status(422).json({ success: false, message: req.t("api.invalidAttendance") });
     }
   } else if (!Number.isInteger(partySize) || partySize < 1 || partySize > 5) {
-    return res.status(422).json({ success: false, message: "Kisi sayisi 1 ile 5 arasinda olmalidir." });
+    return res.status(422).json({ success: false, message: req.t("api.partySizeRange") });
   }
 
   try {
     const [tokenRows] = await pool.query("SELECT id, name FROM guests WHERE invite_token = ? LIMIT 1", [token]);
     const selectedGuest = tokenRows[0];
     if (!selectedGuest) {
-      return res.status(404).json({ success: false, message: "Davet bulunamadi." });
+      return res.status(404).json({ success: false, message: req.t("api.inviteNotFound") });
     }
     if (guestId && Number(selectedGuest.id) !== guestId) {
-      return res.status(422).json({ success: false, message: "Gecersiz davet kaydi." });
+      return res.status(422).json({ success: false, message: req.t("api.invalidGuestRecord") });
     }
 
     await pool.query(
@@ -683,9 +681,7 @@ app.post("/api/rsvp/:token", async (req, res) => {
 
     return res.json({
       success: true,
-      message: notAttending
-        ? "Katilamayacaginiz kaydedildi. Tesekkur ederiz."
-        : "Katiliminiz kaydedildi. Tesekkur ederiz!",
+      message: notAttending ? req.t("api.declineSuccess") : req.t("api.attendanceSuccess"),
       guest: {
         id: selectedGuest.id,
         name: selectedGuest.name,
@@ -694,7 +690,7 @@ app.post("/api/rsvp/:token", async (req, res) => {
       }
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Sunucu hatasi: " + err.message });
+    return res.status(500).json({ success: false, message: req.t("api.serverError", { msg: err.message }) });
   }
 });
 

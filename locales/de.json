@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "title": "Zeynep & Enis - Zusage",
+    "lang": "de"
+  },
+  "rsvp": {
+    "headerBadge": "PERSÖNLICHE HOCHZEITSEINLADUNG",
+    "intro": "Bitte füllen Sie das Formular aus und geben Sie uns Bescheid.",
+    "successPage": "Ihre Teilnahme wurde erfolgreich gespeichert. Vielen Dank!",
+    "calendarTitle": "In Kalender eintragen",
+    "googleCalendar": "Google Kalender",
+    "downloadIcs": "Kalender herunterladen (.ics)",
+    "guestLabel": "Eingeladene Person",
+    "declineTitle": "Ich kann leider nicht teilnehmen",
+    "declineHint": "Wenn Sie dies ankreuzen, wird die Personenzahl auf 0 gesetzt und Ihre Absage wird gespeichert.",
+    "partySizeLabel": "Mit wie vielen Personen kommen Sie?",
+    "partySizeHint": "Wählen Sie die Gesamtzahl der Personen inklusive Ihnen selbst.",
+    "noteLabel": "Kurze Notiz (optional)",
+    "notePlaceholder": "Z. B.: Vegetarisches Menü, wir kommen mit Kindern...",
+    "submit": "Teilnahme bestätigen",
+    "lastUpdate": "Letzte Aktualisierung:",
+    "personCount": "{{n}} Personen",
+    "personCountZero": "0 Personen",
+    "saving": "Wird gespeichert...",
+    "saveFailed": "Speichern fehlgeschlagen.",
+    "connectionError": "Verbindungsfehler. Bitte versuchen Sie es erneut.",
+    "declineSaved": "Ihre Absage wurde gespeichert.",
+    "attendanceSaved": "Ihre Teilnahme wurde gespeichert."
+  },
+  "calendar": {
+    "title": "Hochzeit von Zeynep und Enis",
+    "description": "Hochzeit von Zeynep und Enis - 16:00 - 23:00",
+    "icsFilename": "zeynep-enis-hochzeit.ics"
+  },
+  "api": {
+    "invalidInvite": "Ungültige Einladung.",
+    "invalidAttendance": "Ungültige Teilnahmeangaben.",
+    "partySizeRange": "Die Personenzahl muss zwischen 1 und 5 liegen.",
+    "inviteNotFound": "Einladung nicht gefunden.",
+    "invalidGuestRecord": "Ungültiger Einladungseintrag.",
+    "declineSuccess": "Ihre Absage wurde gespeichert. Vielen Dank.",
+    "attendanceSuccess": "Ihre Teilnahme wurde gespeichert. Vielen Dank!",
+    "serverError": "Serverfehler: {{msg}}"
+  },
+  "errors": {
+    "inviteNotFound": "Einladung nicht gefunden.",
+    "inviteExpired": "Einladung nicht gefunden oder abgelaufen."
+  },
+  "lang": {
+    "tr": "Türkçe",
+    "de": "Deutsch"
+  }
+}
