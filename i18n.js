@@ -102,7 +102,7 @@ function getWeddingCalendar(locale) {
     title: t("calendar.title"),
     description: t("calendar.description"),
     icsFilename: t("calendar.icsFilename"),
-    date: "20270116",
+    date: "20270821",
     start: "160000",
     end: "230000",
     timezone: "Europe/Istanbul"
