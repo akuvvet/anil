@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "wedding-app",
+      name: "wedding-anil",
       script: "app.js",
       instances: 1,
       autorestart: true,
