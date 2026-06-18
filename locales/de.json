@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Zeynep & Enis - Zusage",
+    "title": "Ilayda & Anil - Zusage",
     "lang": "de"
   },
   "rsvp": {
@@ -28,9 +28,9 @@
     "attendanceSaved": "Ihre Teilnahme wurde gespeichert."
   },
   "calendar": {
-    "title": "Hochzeit von Zeynep und Enis",
-    "description": "Hochzeit von Zeynep und Enis - 16:00 - 23:00",
-    "icsFilename": "zeynep-enis-hochzeit.ics"
+    "title": "Hochzeit von Ilayda und Anil",
+    "description": "Hochzeit von Ilayda und Anil - 16:00 - 23:00",
+    "icsFilename": "ilayda-anil-hochzeit.ics"
   },
   "api": {
     "invalidInvite": "Ungültige Einladung.",
