@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gun Akisi</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="<%= basePath %>/style.css">
 </head>
 <body class="min-h-screen bg-slate-100">
   <%- include('partials/nav', { username, readOnly }) %>
@@ -18,7 +18,7 @@
     <% if (!readOnly) { %>
     <section class="bg-white border rounded-2xl p-4 sm:p-5">
       <h1 class="text-lg font-semibold mb-4">Yeni Gun Akisi Kaydi</h1>
-      <form method="post" action="/gun-akisi" class="flow-form-row grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+      <form method="post" action="<%= basePath %>/gun-akisi" class="flow-form-row grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
         <div class="lg:col-span-2">
           <label class="text-xs font-medium text-slate-600">Tarih</label>
           <input type="date" name="tarih" required class="mt-1 w-full rounded border px-2 py-2 text-sm">
@@ -120,7 +120,8 @@
 
   <script>
   const READ_ONLY = <%= readOnly ? 'true' : 'false' %>;
-  const FLOW_API = { prefix: '/api/gun-akisi' };
+  const BASE_PATH = '<%= basePath %>';
+  const FLOW_API = { prefix: BASE_PATH + '/api/gun-akisi' };
   const ACILIK_LIMIT = 80;
   let editingRow = null;
 

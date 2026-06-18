@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= t('meta.title') %></title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="<%= basePath %>/style.css">
 </head>
 <body class="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50">
   <main class="max-w-lg mx-auto p-4 sm:p-8">
     <section class="rsvp-card bg-white rounded-3xl shadow-xl border border-rose-100 overflow-hidden">
       <div class="rsvp-header px-6 py-8 text-center text-white relative">
         <nav class="rsvp-lang-switch" aria-label="Language">
-          <a href="/davet/<%= token %>?lang=tr<%= submitted ? '&ok=1' : '' %>" class="rsvp-lang-btn<%= locale === 'tr' ? ' is-active' : '' %>"><%= t('lang.tr') %></a>
+          <a href="<%= basePath %>/davet/<%= token %>?lang=tr<%= submitted ? '&ok=1' : '' %>" class="rsvp-lang-btn<%= locale === 'tr' ? ' is-active' : '' %>"><%= t('lang.tr') %></a>
           <span class="rsvp-lang-sep" aria-hidden="true">|</span>
-          <a href="/davet/<%= token %>?lang=de<%= submitted ? '&ok=1' : '' %>" class="rsvp-lang-btn<%= locale === 'de' ? ' is-active' : '' %>"><%= t('lang.de') %></a>
+          <a href="<%= basePath %>/davet/<%= token %>?lang=de<%= submitted ? '&ok=1' : '' %>" class="rsvp-lang-btn<%= locale === 'de' ? ' is-active' : '' %>"><%= t('lang.de') %></a>
         </nav>
         <p class="text-sm uppercase tracking-widest opacity-90"><%= t('rsvp.headerBadge') %></p>
         <h1 class="text-2xl sm:text-3xl font-semibold mt-2">Zeynep &amp; Enis</h1>
@@ -39,7 +39,7 @@
           </div>
           <div class="rsvp-calendar-actions">
             <a id="googleCalendarBtn" class="rsvp-calendar-btn" href="#" target="_blank" rel="noopener noreferrer"><%= t('rsvp.googleCalendar') %></a>
-            <a class="rsvp-calendar-btn rsvp-calendar-btn-secondary" href="/davet/<%= token %>/takvim.ics"><%= t('rsvp.downloadIcs') %></a>
+            <a class="rsvp-calendar-btn rsvp-calendar-btn-secondary" href="<%= basePath %>/davet/<%= token %>/takvim.ics"><%= t('rsvp.downloadIcs') %></a>
           </div>
         </div>
 
@@ -220,7 +220,7 @@
     submitBtn.disabled = true;
     submitBtn.textContent = I18N.saving;
     try {
-      const res = await fetch(`/api/rsvp/${TOKEN}`, {
+      const res = await fetch(`<%= basePath %>/api/rsvp/${TOKEN}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -4,10 +4,10 @@
     <div class="flex flex-wrap items-center gap-2 text-sm justify-end">
       <span class="px-2 py-1 rounded bg-slate-800/80">Kullanici: <%= typeof username !== "undefined" ? username : "-" %></span>
       <% if (readOnly) { %><span class="px-2 py-1 rounded bg-slate-800/80">Salt okunur</span><% } %>
-      <% if (!readOnly) { %><a class="px-3 py-1.5 rounded bg-slate-700" href="/">Giris Formu</a><% } %>
-      <a class="px-3 py-1.5 rounded bg-teal-600 font-medium" href="/gun-akisi">Gun Akisi</a>
-      <a class="px-3 py-1.5 rounded <%= readOnly ? 'bg-slate-700' : 'bg-indigo-600' %>" href="/list">Davetli Listesi</a>
-      <a class="px-3 py-1.5 rounded bg-rose-700" href="/logout">Cikis</a>
+      <% if (!readOnly) { %><a class="px-3 py-1.5 rounded bg-slate-700" href="<%= basePath %>/">Giris Formu</a><% } %>
+      <a class="px-3 py-1.5 rounded bg-teal-600 font-medium" href="<%= basePath %>/gun-akisi">Gun Akisi</a>
+      <a class="px-3 py-1.5 rounded <%= readOnly ? 'bg-slate-700' : 'bg-indigo-600' %>" href="<%= basePath %>/list">Davetli Listesi</a>
+      <a class="px-3 py-1.5 rounded bg-rose-700" href="<%= basePath %>/logout">Cikis</a>
     </div>
   </div>
 </nav>

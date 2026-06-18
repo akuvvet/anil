@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Davetli Listesi</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="<%= basePath %>/style.css">
 </head>
 <body class="min-h-screen bg-slate-100">
   <% const filterUsersList = typeof filterUsers !== 'undefined' ? filterUsers : []; %>
@@ -143,7 +143,8 @@
 
   <script>
   const READ_ONLY = <%= readOnly ? 'true' : 'false' %>;
-  const GUEST_API = { prefix: '/api/guest' };
+  const BASE_PATH = '<%= basePath %>';
+  const GUEST_API = { prefix: BASE_PATH + '/api/guest' };
   const statusTextMap = {1:'Mutlaka',2:'Olabilir',3:'Gerek Yok'};
   const statusLetterMap = {1:'E',2:'O',3:'H'};
   const CURRENT_USER_ID = <%= typeof currentUserId !== "undefined" ? Number(currentUserId || 0) : 0 %>;
@@ -393,7 +394,7 @@
   }
 
   async function updateGuestStatus(id, status, btn){
-    const res = await fetch('/api/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
+    const res = await fetch(BASE_PATH + '/api/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
     const data = await res.json();
     if(!res.ok || !data.success){ alert(data.message || 'Guncelleme basarisiz'); return; }
     updateStatusBtnStyle(btn, status);

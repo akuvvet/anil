@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Giris Formu</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="<%= basePath %>/style.css">
 </head>
 <body class="min-h-screen bg-slate-100">
   <%- include('partials/nav', { username, readOnly: false }) %>
@@ -15,7 +15,7 @@
       <h1 class="text-xl font-bold">Davetli Veri Girisi</h1>
       <% if (ok) { %><div class="mt-4 rounded bg-emerald-100 text-emerald-700 px-3 py-2 text-sm">Davetli basariyla kaydedildi.</div><% } %>
       <% if (error) { %><div class="mt-4 rounded bg-red-100 text-red-700 px-3 py-2 text-sm"><%= error %></div><% } %>
-      <form method="post" action="/" class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form method="post" action="<%= basePath %>/" class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="sm:col-span-2"><label class="text-sm">Ad Soyad</label><input name="name" required class="mt-1 w-full rounded border px-3 py-2"></div>
         <div><label class="text-sm">Telefon</label><input name="phone" class="mt-1 w-full rounded border px-3 py-2"></div>
         <div><label class="text-sm">Email</label><input type="email" name="email" class="mt-1 w-full rounded border px-3 py-2"></div>

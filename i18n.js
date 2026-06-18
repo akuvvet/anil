@@ -57,9 +57,24 @@ function resolveLocale(req) {
 }
 
 function setLangCookie(res, locale) {
+  const basePath = String(process.env.BASE_PATH || "").trim().replace(/\/$/, "");
+  let cookiePath = "/";
+  if (!basePath) {
+    const publicUrl = String(process.env.PUBLIC_BASE_URL || "").trim();
+    if (publicUrl) {
+      try {
+        const pathname = new URL(publicUrl).pathname.replace(/\/$/, "");
+        if (pathname && pathname !== "/") cookiePath = pathname;
+      } catch {
+        cookiePath = "/";
+      }
+    }
+  } else if (basePath !== "/") {
+    cookiePath = basePath;
+  }
   res.setHeader(
     "Set-Cookie",
-    `${LANG_COOKIE}=${encodeURIComponent(locale)}; Path=/; Max-Age=${LANG_COOKIE_MAX_AGE}; SameSite=Lax`
+    `${LANG_COOKIE}=${encodeURIComponent(locale)}; Path=${cookiePath}; Max-Age=${LANG_COOKIE_MAX_AGE}; SameSite=Lax`
   );
 }
 

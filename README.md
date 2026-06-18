@@ -41,7 +41,10 @@ pm2 save
 pm2 startup
 ```
 
-### C. Nginx Reverse Proxy fuer `wedding.klick-und-fertig.de`
+### C. Nginx Reverse Proxy fuer `wedding.klick-und-fertig.de/anil`
+
+Die App laeuft unter dem Unterpfad `/anil` (siehe `PUBLIC_BASE_URL` in `.env`).
+PM2-Port und Nginx muessen zusammenpassen (z. B. Port `4008`).
 
 Beispiel-Konfiguration:
 
@@ -50,8 +53,8 @@ server {
     listen 80;
     server_name wedding.klick-und-fertig.de;
 
-    location / {
-        proxy_pass http://127.0.0.1:3000;
+    location /anil/ {
+        proxy_pass http://127.0.0.1:4008/anil/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -59,6 +62,10 @@ server {
         proxy_cache_bypass $http_upgrade;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /anil {
+        return 301 $scheme://$host/anil/;
     }
 }
 ```

@@ -15,9 +15,39 @@ const SALON_CAPACITY = Number(process.env.SALON_CAPACITY || 900);
 const LIMITED_USER_USERNAME = "enis";
 const VIEWER_USERNAME = "izleyici";
 
+function resolveBasePath() {
+  const explicit = String(process.env.BASE_PATH || "").trim().replace(/\/$/, "");
+  if (explicit) return explicit === "/" ? "" : explicit;
+  const publicUrl = String(process.env.PUBLIC_BASE_URL || "").trim();
+  if (publicUrl) {
+    try {
+      const pathname = new URL(publicUrl).pathname.replace(/\/$/, "");
+      return pathname === "/" ? "" : pathname;
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
+const BASE_PATH = resolveBasePath();
+
+function urlPath(subpath = "/") {
+  const raw = String(subpath || "/");
+  const qIndex = raw.indexOf("?");
+  const pathPart = qIndex >= 0 ? raw.slice(0, qIndex) : raw;
+  const queryPart = qIndex >= 0 ? raw.slice(qIndex) : "";
+  const normalized = pathPart.startsWith("/") ? pathPart : `/${pathPart}`;
+  if (!BASE_PATH) return normalized + queryPart;
+  if (normalized === "/") return BASE_PATH + queryPart;
+  return `${BASE_PATH}${normalized}${queryPart}`;
+}
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.set("view cache", false);
+app.set("trust proxy", 1);
+app.locals.basePath = BASE_PATH;
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -29,7 +59,8 @@ app.use(
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: false
+      secure: process.env.NODE_ENV === "production",
+      path: BASE_PATH || "/"
     }
   })
 );
@@ -59,7 +90,7 @@ function canSeeGuestContact(req, guestUserId) {
 }
 
 function viewerHome() {
-  return "/gun-akisi";
+  return urlPath("/gun-akisi");
 }
 
 function normalizeRole(role) {
@@ -71,21 +102,21 @@ function normalizeRole(role) {
 
 function requireLogin(req, res, next) {
   if (req.session.user) return next();
-  if (req.originalUrl.startsWith("/api")) {
+  if (req.path.startsWith("/api")) {
     return res.status(401).json({ success: false, message: "Yetkisiz erisim." });
   }
-  return res.redirect("/login");
+  return res.redirect(urlPath("/login"));
 }
 
 function requireEditor(req, res, next) {
   if (!req.session.user) {
-    if (req.originalUrl.startsWith("/api")) {
+    if (req.path.startsWith("/api")) {
       return res.status(401).json({ success: false, message: "Yetkisiz erisim." });
     }
-    return res.redirect("/login");
+    return res.redirect(urlPath("/login"));
   }
   if (isViewer(req)) {
-    if (req.originalUrl.startsWith("/api")) {
+    if (req.path.startsWith("/api")) {
       return res.status(403).json({ success: false, message: "Salt okunur hesap: degisiklik yapilamaz." });
     }
     return res.redirect(viewerHome());
@@ -339,12 +370,14 @@ async function resolveCurrentUserId(req) {
   return rows[0] ? Number(rows[0].id) : null;
 }
 
-app.get("/login", (req, res) => {
-  if (req.session.user) return res.redirect(isViewer(req) ? viewerHome() : "/");
+const router = express.Router();
+
+router.get("/login", (req, res) => {
+  if (req.session.user) return res.redirect(isViewer(req) ? viewerHome() : urlPath("/"));
   res.render("login", { error: "" });
 });
 
-app.post("/login", async (req, res) => {
+router.post("/login", async (req, res) => {
   const username = String(req.body.username || "").trim();
   const password = String(req.body.password || "");
   if (!username || !password) return res.render("login", { error: "Kullanici adi ve sifre zorunludur." });
@@ -378,23 +411,23 @@ app.post("/login", async (req, res) => {
       username: user ? user.username : username,
       role
     };
-    res.redirect(role === "viewer" ? viewerHome() : "/");
+    res.redirect(role === "viewer" ? viewerHome() : urlPath("/"));
   } catch (err) {
     res.status(500).render("login", { error: "Sunucu hatasi: " + err.message });
   }
 });
 
-app.get("/logout", (req, res) => {
-  req.session.destroy(() => res.redirect("/login"));
+router.get("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect(urlPath("/login")));
 });
 
-app.get("/", requireLogin, (req, res) => {
+router.get("/", requireLogin, (req, res) => {
   if (isViewer(req)) return res.redirect(viewerHome());
   const ok = req.query.ok === "1";
   res.render("index", { ok, error: "", username: req.session.user.username });
 });
 
-app.post("/", requireEditor, async (req, res) => {
+router.post("/", requireEditor, async (req, res) => {
   const name = String(req.body.name || "").trim();
   const phone = String(req.body.phone || "").trim();
   const email = String(req.body.email || "").trim();
@@ -415,13 +448,13 @@ app.post("/", requireEditor, async (req, res) => {
       userId,
       inviteToken
     ]);
-    res.redirect("/?ok=1");
+    res.redirect(urlPath("/?ok=1"));
   } catch (err) {
     res.status(500).render("index", { ok: false, error: "Kayit hatasi: " + err.message, username: req.session.user.username });
   }
 });
 
-app.get("/gun-akisi", requireLogin, async (req, res) => {
+router.get("/gun-akisi", requireLogin, async (req, res) => {
   try {
     const [entries] = await pool.query(GUN_AKISI_SELECT);
     res.render("gun-akisi", {
@@ -436,7 +469,7 @@ app.get("/gun-akisi", requireLogin, async (req, res) => {
   }
 });
 
-app.post("/gun-akisi", requireEditor, async (req, res) => {
+router.post("/gun-akisi", requireEditor, async (req, res) => {
   const tarih = String(req.body.tarih || "").trim();
   const saatBaslangic = String(req.body.saat_baslangic || "").trim();
   const saatBitis = String(req.body.saat_bitis || "").trim();
@@ -470,7 +503,7 @@ app.post("/gun-akisi", requireEditor, async (req, res) => {
       "INSERT INTO gun_akisi (tarih, saat_baslangic, saat_bitis, aksiyon, aciklama, sahis) VALUES (?, ?, ?, ?, ?, ?)",
       [tarih, saatBaslangic, saatBitis, aksiyon, aciklama || null, sahis || null]
     );
-    res.redirect("/gun-akisi?ok=1");
+    res.redirect(urlPath("/gun-akisi?ok=1"));
   } catch (err) {
     const [entries] = await pool.query(GUN_AKISI_SELECT);
     res.status(500).render("gun-akisi", {
@@ -483,7 +516,7 @@ app.post("/gun-akisi", requireEditor, async (req, res) => {
   }
 });
 
-app.post("/api/gun-akisi/:id", requireEditor, async (req, res) => {
+router.post("/api/gun-akisi/:id", requireEditor, async (req, res) => {
   const id = Number(req.params.id || 0);
   const tarih = String(req.body.tarih || "").trim();
   const saatBaslangic = String(req.body.saat_baslangic || "").trim();
@@ -513,7 +546,7 @@ app.post("/api/gun-akisi/:id", requireEditor, async (req, res) => {
   }
 });
 
-app.delete("/api/gun-akisi/:id", requireEditor, async (req, res) => {
+router.delete("/api/gun-akisi/:id", requireEditor, async (req, res) => {
   const id = Number(req.params.id || 0);
   if (!id) {
     return res.status(422).json({ success: false, message: "Gecersiz veri." });
@@ -530,7 +563,7 @@ app.delete("/api/gun-akisi/:id", requireEditor, async (req, res) => {
   }
 });
 
-app.get("/list", requireLogin, async (req, res) => {
+router.get("/list", requireLogin, async (req, res) => {
   try {
     const currentUserId = await resolveCurrentUserId(req);
     const viewer = isViewer(req);
@@ -586,7 +619,7 @@ app.get("/list", requireLogin, async (req, res) => {
   }
 });
 
-app.get("/davet/:token", guestLocaleMiddleware, async (req, res) => {
+router.get("/davet/:token", guestLocaleMiddleware, async (req, res) => {
   const token = String(req.params.token || "").trim();
   if (!token) return res.status(404).send(req.t("errors.inviteNotFound"));
   try {
@@ -612,7 +645,7 @@ app.get("/davet/:token", guestLocaleMiddleware, async (req, res) => {
   }
 });
 
-app.get("/davet/:token/takvim.ics", guestLocaleMiddleware, async (req, res) => {
+router.get("/davet/:token/takvim.ics", guestLocaleMiddleware, async (req, res) => {
   const token = String(req.params.token || "").trim();
   if (!token) return res.status(404).send(req.t("errors.inviteNotFound"));
   try {
@@ -628,7 +661,7 @@ app.get("/davet/:token/takvim.ics", guestLocaleMiddleware, async (req, res) => {
   }
 });
 
-app.get("/api/rsvp/names", async (req, res) => {
+router.get("/api/rsvp/names", async (req, res) => {
   const query = String(req.query.q || "").trim();
   if (query.length < 2) {
     return res.json({ success: true, matches: [] });
@@ -642,7 +675,7 @@ app.get("/api/rsvp/names", async (req, res) => {
   }
 });
 
-app.post("/api/rsvp/:token", guestLocaleMiddleware, async (req, res) => {
+router.post("/api/rsvp/:token", guestLocaleMiddleware, async (req, res) => {
   const token = String(req.params.token || "").trim();
   const guestId = Number(req.body.guest_id || 0);
   const notAttending = req.body.not_attending === true || req.body.not_attending === "true";
@@ -694,9 +727,9 @@ app.post("/api/rsvp/:token", guestLocaleMiddleware, async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, "public")));
+router.use(express.static(path.join(__dirname, "public")));
 
-app.post("/api/update", requireEditor, async (req, res) => {
+router.post("/api/update", requireEditor, async (req, res) => {
   const id = Number(req.body.id || 0);
   const status = Number(req.body.status || 0);
   if (!id || ![1, 2, 3].includes(status)) {
@@ -776,10 +809,10 @@ async function handleGuestSave(req, res) {
   }
 }
 
-app.put("/api/guest/:id", requireEditor, handleGuestSave);
-app.post("/api/guest/:id", requireEditor, handleGuestSave);
+router.put("/api/guest/:id", requireEditor, handleGuestSave);
+router.post("/api/guest/:id", requireEditor, handleGuestSave);
 
-app.delete("/api/guest/:id", requireEditor, async (req, res) => {
+router.delete("/api/guest/:id", requireEditor, async (req, res) => {
   const id = Number(req.params.id || 0);
   const currentUserId = Number(await resolveCurrentUserId(req) || 0);
   if (!id) {
@@ -811,7 +844,9 @@ Promise.all([ensureSeedUsers(), ensureGunAkisiTable(), ensureGuestRsvpColumns()]
     console.error("Baslangic kurulum hatasi:", err.message);
   })
   .finally(() => {
+    app.use(BASE_PATH || "/", router);
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      const mount = BASE_PATH || "/";
+      console.log(`Server running on http://localhost:${PORT}${mount}`);
     });
   });
