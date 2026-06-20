@@ -604,13 +604,40 @@ tr.guest-row-rsvp-declined:hover {
     cursor: not-allowed;
 }
 
+.stats-grid .stats-card {
+    padding: 0.5rem 0.625rem;
+    line-height: 1.2;
+}
+
+@media (min-width: 640px) {
+    .stats-grid .stats-card {
+        padding: 0.625rem 0.75rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .stats-grid .stats-card {
+        padding: 0.75rem 0.875rem;
+    }
+}
+
+.stats-grid .stats-card-emerald p + p {
+    margin-top: 0.125rem;
+}
+
+@media (min-width: 640px) {
+    .stats-grid .stats-card-emerald p + p {
+        margin-top: 0.25rem;
+    }
+}
+
 @media (max-width: 639px) {
     .stats-grid .stats-card {
         min-height: 0;
     }
 
     .stats-grid .stats-card-emerald #confirmed-guests-ratio {
-        font-size: 0.9375rem;
-        line-height: 1.25;
+        font-size: 0.875rem;
+        line-height: 1.2;
     }
 }
