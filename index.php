@@ -21,8 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo = getPdo();
+            ensureGuestInviteColumns($pdo);
             $userId = currentUserId();
-            $stmt = $pdo->prepare('INSERT INTO guests (name, phone, email, city, status, user_id) VALUES (:name,:phone,:email,:city,:status,:user_id)');
+            $inviteToken = generateInviteToken();
+            $stmt = $pdo->prepare('INSERT INTO guests (name, phone, email, city, status, user_id, invite_token) VALUES (:name,:phone,:email,:city,:status,:user_id,:invite_token)');
             $stmt->execute([
                 'name' => $name,
                 'phone' => $phone !== '' ? $phone : null,
@@ -30,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'city' => $city !== '' ? $city : null,
                 'status' => $status,
                 'user_id' => $userId > 0 ? $userId : null,
+                'invite_token' => $inviteToken,
             ]);
             header('Location: index.php?ok=1');
             exit;

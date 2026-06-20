@@ -256,6 +256,15 @@ async function ensureGuestRsvpColumns() {
   }
 }
 
+async function backfillMissingInviteTokens() {
+  const [rows] = await pool.query(
+    "SELECT id FROM guests WHERE invite_token IS NULL OR invite_token = '' ORDER BY id ASC"
+  );
+  for (const row of rows) {
+    await ensureGuestInviteToken(row.id);
+  }
+}
+
 async function ensureGuestInviteToken(guestId) {
   const [rows] = await pool.query("SELECT invite_token FROM guests WHERE id = ? LIMIT 1", [guestId]);
   const guest = rows[0];
@@ -264,10 +273,10 @@ async function ensureGuestInviteToken(guestId) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const token = generateInviteToken();
     try {
-      const [result] = await pool.query("UPDATE guests SET invite_token = ? WHERE id = ? AND invite_token IS NULL", [
-        token,
-        guestId
-      ]);
+      const [result] = await pool.query(
+        "UPDATE guests SET invite_token = ? WHERE id = ? AND (invite_token IS NULL OR invite_token = '')",
+        [token, guestId]
+      );
       if (result.affectedRows > 0) return token;
       const [again] = await pool.query("SELECT invite_token FROM guests WHERE id = ? LIMIT 1", [guestId]);
       if (again[0]?.invite_token) return again[0].invite_token;
@@ -840,6 +849,7 @@ router.delete("/api/guest/:id", requireEditor, async (req, res) => {
 });
 
 Promise.all([ensureSeedUsers(), ensureGunAkisiTable(), ensureGuestRsvpColumns()])
+  .then(() => backfillMissingInviteTokens())
   .catch((err) => {
     console.error("Baslangic kurulum hatasi:", err.message);
   })

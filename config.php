@@ -5,7 +5,56 @@ const DB_HOST = '127.0.0.1';
 const DB_NAME = 'dbanil';
 const DB_USER = 'root';
 const DB_PASS = '';
-const SALON_CAPACITY = 900;
+const SALON_CAPACITY = 720;
+
+function generateInviteToken(): string
+{
+    return bin2hex(random_bytes(24));
+}
+
+function ensureGuestInviteColumns(PDO $pdo): void
+{
+    $cols = $pdo->query('SHOW COLUMNS FROM guests')->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('invite_token', $cols, true)) {
+        $pdo->exec('ALTER TABLE guests ADD COLUMN invite_token VARCHAR(64) DEFAULT NULL');
+    }
+    $indexes = $pdo->query("SHOW INDEX FROM guests WHERE Key_name = 'idx_guests_invite_token'")->fetchAll();
+    if (!$indexes) {
+        $pdo->exec('CREATE UNIQUE INDEX idx_guests_invite_token ON guests (invite_token)');
+    }
+}
+
+function ensureGuestInviteToken(PDO $pdo, int $guestId): ?string
+{
+    $stmt = $pdo->prepare('SELECT invite_token FROM guests WHERE id = ? LIMIT 1');
+    $stmt->execute([$guestId]);
+    $token = (string)($stmt->fetchColumn() ?: '');
+    if ($token !== '') {
+        return $token;
+    }
+
+    for ($attempt = 0; $attempt < 5; $attempt++) {
+        $candidate = generateInviteToken();
+        try {
+            $update = $pdo->prepare('UPDATE guests SET invite_token = ? WHERE id = ? AND (invite_token IS NULL OR invite_token = \'\')');
+            $update->execute([$candidate, $guestId]);
+            if ($update->rowCount() > 0) {
+                return $candidate;
+            }
+            $stmt->execute([$guestId]);
+            $token = (string)($stmt->fetchColumn() ?: '');
+            if ($token !== '') {
+                return $token;
+            }
+        } catch (PDOException $e) {
+            if ((int)$e->errorInfo[1] !== 1062) {
+                throw $e;
+            }
+        }
+    }
+
+    return null;
+}
 
 function getPdo(): PDO
 {
