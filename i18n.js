@@ -98,16 +98,27 @@ function guestLocaleMiddleware(req, res, next) {
   next();
 }
 
+// Dugun salonu: adres, yol tarifi linki ve takvim kaydindaki hatirlatmalar (ICS sure bicimi).
+const WEDDING_VENUE = {
+  venueName: "LA VIE Eventlocation",
+  address: "Ernst-Heinrich-Geist-Straße 22, 50226 Frechen",
+  reminders: ["P1D"]
+};
+// Takvim kaydi ve yol tarifi icin: salon adi + adres.
+WEDDING_VENUE.location = `${WEDDING_VENUE.venueName}, ${WEDDING_VENUE.address}`;
+WEDDING_VENUE.mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(WEDDING_VENUE.location)}`;
+
 function getWeddingCalendar(locale) {
   const t = createTranslator(locale);
   return {
+    ...WEDDING_VENUE,
     title: t("calendar.title"),
     description: t("calendar.description"),
     icsFilename: t("calendar.icsFilename"),
     date: "20270821",
     start: "160000",
     end: "230000",
-    timezone: "Europe/Istanbul"
+    timezone: "Europe/Berlin"
   };
 }
 

@@ -6,23 +6,27 @@
   <title><%= t('meta.title') %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<%= basePath %>/style.css">
 </head>
 <body class="rsvp-page">
-  <main class="max-w-lg mx-auto p-4 sm:p-8">
-    <section class="rsvp-card rounded-3xl overflow-hidden">
-      <div class="rsvp-header px-6 py-8 text-center text-white relative">
+  <main class="rsvp-main">
+    <section class="rsvp-card">
+      <div class="rsvp-header">
         <nav class="rsvp-lang-switch" aria-label="Language">
           <% ['tr', 'de', 'en'].forEach((code, i) => { %>
           <% if (i > 0) { %><span class="rsvp-lang-sep" aria-hidden="true">|</span><% } %>
           <a href="<%= basePath %>/davet/<%= token %>?lang=<%= code %><%= submitted ? '&ok=1' : '' %>" lang="<%= code %>" class="rsvp-lang-btn<%= locale === code ? ' is-active' : '' %>"<%- locale === code ? ' aria-current="true"' : '' %>><%= t('lang.' + code) %></a>
           <% }) %>
         </nav>
-        <p class="rsvp-header-badge text-sm uppercase"><%= t('rsvp.headerBadge') %></p>
-        <h1 class="rsvp-header-title text-3xl sm:text-4xl mt-2">Ilayda &amp; Anil</h1>
-        <p class="rsvp-header-date mt-2 text-xl">21.08.2027</p>
+        <div class="rsvp-ornament" aria-hidden="true">
+          <span class="rsvp-ornament-line"></span>
+          <span class="rsvp-ornament-diamond"></span>
+          <span class="rsvp-ornament-line"></span>
+        </div>
+        <p class="rsvp-badge"><%= t('rsvp.headerBadge') %></p>
+        <h1 class="rsvp-couple">Ilayda <span class="rsvp-amp">&amp;</span> Anil</h1>
+        <p class="rsvp-date">21.08.2027</p>
         <div class="rsvp-parents">
           <p class="rsvp-parents-title"><%= t('rsvp.parents') %></p>
           <div class="rsvp-parents-row">
@@ -31,18 +35,26 @@
             <p class="rsvp-parents-side">Berna, Serdar<span class="rsvp-parents-family">Yol</span></p>
           </div>
         </div>
-        <p class="rsvp-header-intro mt-3 text-sm"><%= t('rsvp.intro') %></p>
+        <div class="rsvp-venue">
+          <p class="rsvp-venue-name"><%= calendar.venueName %></p>
+          <p class="rsvp-venue-address"><%= calendar.address %></p>
+          <a class="rsvp-venue-route" href="<%= calendar.mapsUrl %>" target="_blank" rel="noopener noreferrer" title="<%= t('rsvp.routeTitle') %>">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+            <span><%= t('rsvp.route') %></span>
+          </a>
+        </div>
+        <p class="rsvp-intro"><%= t('rsvp.intro') %></p>
       </div>
 
-      <div class="px-6 py-6 space-y-5">
+      <div class="rsvp-body">
         <% if (submitted) { %>
         <div class="rsvp-alert rsvp-alert-success">
           <%= t('rsvp.successPage') %>
         </div>
         <% } %>
 
-        <div id="rsvpError" class="hidden rsvp-alert rsvp-alert-error"></div>
-        <div id="rsvpSuccess" class="hidden rsvp-alert rsvp-alert-success"></div>
+        <div id="rsvpError" class="rsvp-alert rsvp-alert-error hidden"></div>
+        <div id="rsvpSuccess" class="rsvp-alert rsvp-alert-success hidden"></div>
 
         <div id="calendarBackdrop" class="rsvp-calendar-backdrop" hidden></div>
         <div id="calendarSuggest" class="rsvp-calendar-suggest" hidden>
@@ -54,20 +66,21 @@
             <div>
               <p class="rsvp-calendar-title"><%= t('rsvp.calendarTitle') %></p>
               <p class="rsvp-calendar-meta"><%= calendar.title %> · 21.08.2027 · 16:00 – 23:00</p>
+              <p class="rsvp-calendar-meta"><%= calendar.location %></p>
             </div>
           </div>
           <div class="rsvp-calendar-actions">
             <a id="googleCalendarBtn" class="rsvp-calendar-btn" href="#" target="_blank" rel="noopener noreferrer"><%= t('rsvp.googleCalendar') %></a>
-            <a class="rsvp-calendar-btn rsvp-calendar-btn-secondary" href="<%= basePath %>/davet/<%= token %>/takvim.ics"><%= t('rsvp.downloadIcs') %></a>
+            <a class="rsvp-calendar-btn rsvp-calendar-btn-secondary" href="<%= typeof basePath !== 'undefined' ? basePath : '' %>/davet/<%= token %>/takvim.ics"><%= t('rsvp.downloadIcs') %></a>
           </div>
           <button type="button" id="calendarLater" class="rsvp-calendar-later"><%= t('rsvp.calendarLater') %></button>
         </div>
 
-        <form id="rsvpForm" class="space-y-5" novalidate>
+        <form id="rsvpForm" class="rsvp-form" novalidate>
           <input type="hidden" id="guestId" name="guest_id" value="<%= guest.id %>">
 
-          <div class="rsvp-guest-card">
-            <p class="rsvp-guest-label"><%= t('rsvp.guestLabel') %></p>
+          <div class="rsvp-guest-box">
+            <p class="rsvp-field-label"><%= t('rsvp.guestLabel') %></p>
             <p id="selectedGuestName" class="rsvp-guest-name"><%= guest.name %></p>
           </div>
 
@@ -87,23 +100,23 @@
             </div>
           </fieldset>
 
-          <div id="partySizeWrap" hidden>
+          <div id="partySizeWrap" class="rsvp-field" hidden>
             <label for="partySize" class="rsvp-question"><%= t('rsvp.partySizeLabel') %></label>
-            <select id="partySize" name="party_size" class="rsvp-input w-full"></select>
+            <select id="partySize" name="party_size" class="rsvp-input"></select>
           </div>
 
-          <div>
+          <div class="rsvp-field">
             <label for="rsvpNote" class="rsvp-question"><%= t('rsvp.noteLabel') %></label>
             <textarea
               id="rsvpNote"
               name="note"
-              class="rsvp-input w-full min-h-[5rem] resize-y"
+              class="rsvp-input rsvp-textarea"
               maxlength="500"
               placeholder="<%= t('rsvp.notePlaceholder') %>"
             ><%= guest.rsvp_note || '' %></textarea>
           </div>
 
-          <button type="submit" id="rsvpSubmit" class="rsvp-submit w-full">
+          <button type="submit" id="rsvpSubmit" class="rsvp-submit">
             <%= t('rsvp.submit') %>
           </button>
         </form>
@@ -141,7 +154,9 @@
       action: 'TEMPLATE',
       text: WEDDING_CALENDAR.title,
       dates: `${WEDDING_CALENDAR.date}T${WEDDING_CALENDAR.start}/${WEDDING_CALENDAR.date}T${WEDDING_CALENDAR.end}`,
-      ctz: WEDDING_CALENDAR.timezone
+      ctz: WEDDING_CALENDAR.timezone,
+      location: WEDDING_CALENDAR.location,
+      details: `${WEDDING_CALENDAR.description}\n${WEDDING_CALENDAR.location}\n${WEDDING_CALENDAR.mapsUrl}`
     });
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   }
