@@ -102,7 +102,7 @@ function guestLocaleMiddleware(req, res, next) {
 const WEDDING_VENUE = {
   venueName: "LA VIE Eventlocation",
   address: "Ernst-Heinrich-Geist-Straße 22, 50226 Frechen",
-  reminders: ["P1D"]
+  reminders: ["P1D", "PT1H"]
 };
 // Takvim kaydi ve yol tarifi icin: salon adi + adres.
 WEDDING_VENUE.location = `${WEDDING_VENUE.venueName}, ${WEDDING_VENUE.address}`;

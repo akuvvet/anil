@@ -154,7 +154,7 @@ function escapeIcsText(value) {
 function buildWeddingIcs(locale = "tr") {
   const calendar = getWeddingCalendar(locale);
   const { title, description, date, start, end, timezone, location, mapsUrl, reminders } = calendar;
-  // Her hatirlatma icin bir VALARM (or. 1 gun once).
+  // Her hatirlatma icin bir VALARM (or. 1 gun once, 1 saat once).
   const alarms = reminders.flatMap((before) => [
     "BEGIN:VALARM",
     "ACTION:DISPLAY",
