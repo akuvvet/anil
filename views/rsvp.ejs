@@ -132,7 +132,7 @@
 
   <script>
   const TOKEN = <%- JSON.stringify(token) %>;
-  const INITIAL_GUEST = <%- JSON.stringify({ id: guest.id, name: guest.name, status: guest.status, party_size: guest.party_size }) %>;
+  const INITIAL_GUEST = <%- JSON.stringify({ id: guest.id, name: guest.name, status: guest.status, party_size: guest.party_size, answered: !!guest.rsvp_at }) %>;
   const WEDDING_CALENDAR = <%- JSON.stringify(calendar) %>;
   const SHOW_CALENDAR_INIT = <%= showCalendar ? 'true' : 'false' %>;
   const I18N = <%- JSON.stringify(i18n.rsvp) %>;
@@ -246,7 +246,8 @@
 
   const initialSize = Number(INITIAL_GUEST.party_size || 0);
   buildPartySizeOptions(initialSize);
-  if (Number(INITIAL_GUEST.status) === 3) {
+  // Paneldeki durum 3 tek basina yanit sayilmaz: yalnizca davetli kendisi yanitladiysa "katilamayacagim" secili gelir.
+  if (INITIAL_GUEST.answered && Number(INITIAL_GUEST.status) === 3) {
     setChoice('no');
   } else if (SHOW_CALENDAR_INIT || initialSize > 0) {
     setChoice('yes');
