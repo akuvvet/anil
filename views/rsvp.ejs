@@ -23,6 +23,14 @@
         <p class="rsvp-header-badge text-sm uppercase"><%= t('rsvp.headerBadge') %></p>
         <h1 class="rsvp-header-title text-3xl sm:text-4xl mt-2">Ilayda &amp; Anil</h1>
         <p class="rsvp-header-date mt-2 text-xl">21.08.2027</p>
+        <div class="rsvp-parents">
+          <p class="rsvp-parents-title"><%= t('rsvp.parents') %></p>
+          <div class="rsvp-parents-row">
+            <p class="rsvp-parents-side">Çiçek, Osman<span class="rsvp-parents-family">Piroğlu</span></p>
+            <span class="rsvp-parents-sep" aria-hidden="true"></span>
+            <p class="rsvp-parents-side">Berna, Serdar<span class="rsvp-parents-family">Yol</span></p>
+          </div>
+        </div>
         <p class="rsvp-header-intro mt-3 text-sm"><%= t('rsvp.intro') %></p>
       </div>
 
@@ -35,6 +43,25 @@
 
         <div id="rsvpError" class="hidden rsvp-alert rsvp-alert-error"></div>
         <div id="rsvpSuccess" class="hidden rsvp-alert rsvp-alert-success"></div>
+
+        <div id="calendarBackdrop" class="rsvp-calendar-backdrop" hidden></div>
+        <div id="calendarSuggest" class="rsvp-calendar-suggest" hidden>
+          <button type="button" id="calendarClose" class="rsvp-calendar-close" aria-label="<%= t('rsvp.calendarLater') %>">&times;</button>
+          <div class="rsvp-calendar-head">
+            <span class="rsvp-calendar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1zm13 8H4v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9zm-8.6 7.2-2.6-2.6 1.4-1.4 1.2 1.2 3.4-3.4 1.4 1.4-4.8 4.8z"/></svg>
+            </span>
+            <div>
+              <p class="rsvp-calendar-title"><%= t('rsvp.calendarTitle') %></p>
+              <p class="rsvp-calendar-meta"><%= calendar.title %> · 21.08.2027 · 16:00 – 23:00</p>
+            </div>
+          </div>
+          <div class="rsvp-calendar-actions">
+            <a id="googleCalendarBtn" class="rsvp-calendar-btn" href="#" target="_blank" rel="noopener noreferrer"><%= t('rsvp.googleCalendar') %></a>
+            <a class="rsvp-calendar-btn rsvp-calendar-btn-secondary" href="<%= basePath %>/davet/<%= token %>/takvim.ics"><%= t('rsvp.downloadIcs') %></a>
+          </div>
+          <button type="button" id="calendarLater" class="rsvp-calendar-later"><%= t('rsvp.calendarLater') %></button>
+        </div>
 
         <form id="rsvpForm" class="space-y-5" novalidate>
           <input type="hidden" id="guestId" name="guest_id" value="<%= guest.id %>">
@@ -80,17 +107,6 @@
             <%= t('rsvp.submit') %>
           </button>
         </form>
-
-        <div id="calendarSuggest" class="rsvp-calendar-suggest space-y-3" hidden>
-          <div>
-            <p class="rsvp-calendar-title"><%= t('rsvp.calendarTitle') %></p>
-            <p class="rsvp-calendar-meta"><%= calendar.title %> · 21.08.2027 · 16:00 – 23:00</p>
-          </div>
-          <div class="rsvp-calendar-actions">
-            <a id="googleCalendarBtn" class="rsvp-calendar-btn" href="#" target="_blank" rel="noopener noreferrer"><%= t('rsvp.googleCalendar') %></a>
-            <a class="rsvp-calendar-btn rsvp-calendar-btn-secondary" href="<%= basePath %>/davet/<%= token %>/takvim.ics"><%= t('rsvp.downloadIcs') %></a>
-          </div>
-        </div>
 
         <% if (guest.rsvp_at) { %>
         <p class="rsvp-footer-note">
@@ -156,11 +172,38 @@
     return checked ? checked.value : '';
   }
 
+  // Takvim kutusu yalnizca katilim kaydedildikten sonra gorunur: kayittan hemen sonra
+  // ekranin ortasinda pencere olarak acilir, kapatilinca tesekkurun altinda kalir.
+  let attendanceSaved = false;
+  const calendarBackdrop = document.getElementById('calendarBackdrop');
+  let calendarTimer = null;
+  function openCalendarModal() {
+    if (!calendarSuggest || calendarSuggest.hidden) return;
+    calendarSuggest.classList.add('is-modal');
+    calendarBackdrop.hidden = false;
+  }
+  function closeCalendarModal() {
+    clearTimeout(calendarTimer);
+    if (!calendarSuggest) return;
+    calendarSuggest.classList.remove('is-modal');
+    calendarBackdrop.hidden = true;
+  }
+  if (calendarSuggest) {
+    calendarBackdrop.addEventListener('click', closeCalendarModal);
+    document.getElementById('calendarClose').addEventListener('click', closeCalendarModal);
+    document.getElementById('calendarLater').addEventListener('click', closeCalendarModal);
+    calendarSuggest.querySelectorAll('.rsvp-calendar-btn').forEach((btn) => btn.addEventListener('click', () => setTimeout(closeCalendarModal, 300)));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCalendarModal(); });
+  }
+
   // Secime gore: kisi sayisi alani, buton metni ve takvim kutusu.
   function applyChoice() {
     const choice = currentChoice();
     partySizeWrap.hidden = choice !== 'yes';
-    if (calendarSuggest) calendarSuggest.hidden = choice !== 'yes';
+    if (calendarSuggest) {
+      calendarSuggest.hidden = !(choice === 'yes' && attendanceSaved);
+      if (calendarSuggest.hidden) closeCalendarModal();
+    }
     submitBtn.textContent = choice === 'no' ? I18N.submitDecline : I18N.submit;
   }
 
@@ -239,13 +282,17 @@
         return;
       }
       if (data.guest?.name) selectedGuestName.textContent = data.guest.name;
+      attendanceSaved = !decline;
       if (Number(data.guest?.status) === 3 || Number(data.guest?.party_size) === 0) {
+        attendanceSaved = false;
         setChoice('no');
       } else if (data.guest) {
         buildPartySizeOptions(Number(data.guest.party_size || 0));
         setChoice('yes');
       }
       showSuccess(data.message || (decline ? I18N.declineSaved : I18N.attendanceSaved));
+      // Once tesekkur gorunsun, ardindan takvim penceresi acilsin.
+      if (attendanceSaved) calendarTimer = setTimeout(openCalendarModal, 1200);
     } catch (err) {
       showError(I18N.connectionError);
     } finally {
