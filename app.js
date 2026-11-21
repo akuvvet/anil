@@ -424,7 +424,7 @@ const router = express.Router();
 router.use(guestLocaleMiddleware);
 
 router.get("/login", (req, res) => {
-  if (req.session.user) return res.redirect(isViewer(req) ? viewerHome() : urlPath("/"));
+  if (req.session.user) return res.redirect(isViewer(req) ? viewerHome() : urlPath("/list"));
   res.render("login", { error: "" });
 });
 
@@ -462,7 +462,7 @@ router.post("/login", async (req, res) => {
       username: user ? user.username : username,
       role
     };
-    res.redirect(role === "viewer" ? viewerHome() : urlPath("/"));
+    res.redirect(role === "viewer" ? viewerHome() : urlPath("/list"));
   } catch (err) {
     res.status(500).render("login", { error: req.t("panel.api.serverError", { msg: err.message }) });
   }
