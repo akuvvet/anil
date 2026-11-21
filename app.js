@@ -5,6 +5,7 @@ const session = require("express-session");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
 const { pool } = require("./db");
+const { MySqlSessionStore } = require("./session-store");
 const { guestLocaleMiddleware, getWeddingCalendar, localeDateTimeFormat } = require("./i18n");
 
 dotenv.config();
@@ -53,6 +54,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(
   session({
+    // Oturumlar veritabaninda: yeniden baslatmada kimse cikis yapmis olmaz.
+    store: new MySqlSessionStore(pool),
     secret: process.env.SESSION_SECRET || "change-this-secret",
     resave: false,
     saveUninitialized: false,
